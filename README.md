@@ -11,7 +11,7 @@ la aplicación; los prestatarios no necesitan una cuenta.
 - Creación, edición y eliminación de préstamos.
 - Datos de contacto del prestatario en cada préstamo.
 - Listado de préstamos propios.
-- Filtro por estado: pendiente o pagado.
+- Filtros combinables por estado, rango de fecha y nombre del prestatario.
 - Validación de montos y fechas.
 - Separación de datos entre usuarios autenticados.
 

@@ -9,14 +9,29 @@
     <a class="button" href="{% url 'loans:create' %}">Nuevo préstamo</a>
 </div>
 
-<nav class="filters" aria-label="Filtrar por estado">
-    <strong>Estado:</strong>
-    <a {% if not selected_status %}aria-current="page"{% endif %} href="{% url 'loans:list' %}">Todos</a>
-    {% for value, label in status_choices %}
-        <a {% if selected_status == value %}aria-current="page"{% endif %}
-           href="{% url 'loans:list' %}?status={{ value }}">{{ label }}</a>
-    {% endfor %}
-</nav>
+<form class="filters" method="get">
+    <div>
+        {{ filter_form.status.label_tag }}
+        {{ filter_form.status }}
+    </div>
+    <div>
+        {{ filter_form.borrower_name.label_tag }}
+        {{ filter_form.borrower_name }}
+    </div>
+    <div>
+        {{ filter_form.date_from.label_tag }}
+        {{ filter_form.date_from }}
+    </div>
+    <div>
+        {{ filter_form.date_to.label_tag }}
+        {{ filter_form.date_to }}
+    </div>
+    <div class="filter-actions">
+        <button type="submit">Filtrar</button>
+        <a href="{% url 'loans:list' %}">Limpiar</a>
+    </div>
+    {{ filter_form.non_field_errors }}
+</form>
 
 <div class="table-wrapper">
     <table>

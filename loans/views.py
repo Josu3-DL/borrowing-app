@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .forms import LoanForm
+from .forms import LoanFilterForm, LoanForm
 from .models import Loan
 
 
@@ -11,17 +11,26 @@ from .models import Loan
 @require_http_methods(["GET"])
 def loan_list(request):
     loans = Loan.objects.filter(owner=request.user)
-    selected_status = request.GET.get("status", "")
+    filter_form = LoanFilterForm(request.GET)
 
-    if selected_status in Loan.Status.values:
-        loans = loans.filter(status=selected_status)
-    else:
-        selected_status = ""
+    if filter_form.is_valid():
+        status = filter_form.cleaned_data["status"]
+        borrower_name = filter_form.cleaned_data["borrower_name"]
+        date_from = filter_form.cleaned_data["date_from"]
+        date_to = filter_form.cleaned_data["date_to"]
+
+        if status:
+            loans = loans.filter(status=status)
+        if borrower_name:
+            loans = loans.filter(borrower_name__icontains=borrower_name)
+        if date_from:
+            loans = loans.filter(loan_date__gte=date_from)
+        if date_to:
+            loans = loans.filter(loan_date__lte=date_to)
 
     context = {
         "loans": loans,
-        "selected_status": selected_status,
-        "status_choices": Loan.Status.choices,
+        "filter_form": filter_form,
     }
     return render(request, "loans/loan_list.html", context)
 

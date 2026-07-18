@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .forms import LoanForm
+from .forms import LoanFilterForm, LoanForm
 from .models import Loan
 
 
@@ -13,7 +13,7 @@ User = get_user_model()
 
 
 class LoanTestMixin:
-    password = "UnaClaveSegura2026!"
+    password = "SecurePassword2026!"
 
     def setUp(self):
         self.user = User.objects.create_user(
@@ -29,7 +29,7 @@ class LoanTestMixin:
 
     def loan_data(self, **overrides):
         data = {
-            "borrower_name": "María López",
+            "borrower_name": "Mary Smith",
             "borrower_phone": "8888-8888",
             "borrower_email": "maria@example.com",
             "amount": "250.00",
@@ -83,6 +83,14 @@ class LoanModelAndFormTests(LoanTestMixin, TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("due_date", form.errors)
 
+    def test_filter_form_rejects_reversed_date_range(self):
+        form = LoanFilterForm(
+            data={"date_from": "2026-08-01", "date_to": "2026-07-01"}
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("La fecha inicial", form.non_field_errors()[0])
+
 
 class LoanViewTests(LoanTestMixin, TestCase):
     def test_all_loan_routes_require_authentication(self):
@@ -110,7 +118,7 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertRedirects(response, reverse("loans:list"))
         loan = Loan.objects.get()
         self.assertEqual(loan.owner, self.user)
-        self.assertEqual(loan.borrower_name, "María López")
+        self.assertEqual(loan.borrower_name, "Mary Smith")
         self.assertNotEqual(loan.borrower_email, self.user.email)
 
     def test_list_only_shows_current_users_loans(self):
@@ -128,11 +136,11 @@ class LoanViewTests(LoanTestMixin, TestCase):
 
     def test_list_filters_loans_by_status(self):
         pending = self.create_loan(
-            borrower_name="Prestatario pendiente",
+            borrower_name="Pending borrower",
             status=Loan.Status.PENDING,
         )
         paid = self.create_loan(
-            borrower_name="Prestatario pagado",
+            borrower_name="Paid borrower",
             status=Loan.Status.PAID,
         )
         self.client.force_login(self.user)
@@ -145,6 +153,86 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(response, paid.borrower_name)
         self.assertNotContains(response, pending.borrower_name)
 
+    def test_list_filters_loans_by_borrower_name_case_insensitively(self):
+        matching = self.create_loan(borrower_name="Alice Smith")
+        non_matching = self.create_loan(borrower_name="Bob Jones")
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:list"),
+            {"borrower_name": "alice"},
+        )
+
+        self.assertContains(response, matching.borrower_name)
+        self.assertNotContains(response, non_matching.borrower_name)
+
+    def test_list_filters_loans_by_inclusive_loan_date_range(self):
+        before_range = self.create_loan(
+            borrower_name="Before range",
+            loan_date="2026-06-30",
+        )
+        range_start = self.create_loan(
+            borrower_name="Range start",
+            loan_date="2026-07-01",
+        )
+        range_end = self.create_loan(
+            borrower_name="Range end",
+            loan_date="2026-07-31",
+        )
+        after_range = self.create_loan(
+            borrower_name="After range",
+            loan_date="2026-08-01",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:list"),
+            {"date_from": "2026-07-01", "date_to": "2026-07-31"},
+        )
+
+        self.assertContains(response, range_start.borrower_name)
+        self.assertContains(response, range_end.borrower_name)
+        self.assertNotContains(response, before_range.borrower_name)
+        self.assertNotContains(response, after_range.borrower_name)
+
+    def test_list_combines_all_filters(self):
+        matching = self.create_loan(
+            borrower_name="Alice Matching",
+            loan_date="2026-07-15",
+            status=Loan.Status.PAID,
+        )
+        self.create_loan(
+            borrower_name="Alice Pending",
+            loan_date="2026-07-15",
+            status=Loan.Status.PENDING,
+        )
+        self.create_loan(
+            borrower_name="Alice Outside Range",
+            loan_date="2026-06-15",
+            status=Loan.Status.PAID,
+        )
+        self.create_loan(
+            borrower_name="Bob Matching",
+            loan_date="2026-07-15",
+            status=Loan.Status.PAID,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:list"),
+            {
+                "status": Loan.Status.PAID,
+                "borrower_name": "alice",
+                "date_from": "2026-07-01",
+                "date_to": "2026-07-31",
+            },
+        )
+
+        self.assertContains(response, matching.borrower_name)
+        self.assertNotContains(response, "Alice Pending")
+        self.assertNotContains(response, "Alice Outside Range")
+        self.assertNotContains(response, "Bob Matching")
+
     def test_user_can_update_own_loan(self):
         loan = self.create_loan()
         self.client.force_login(self.user)
@@ -152,14 +240,14 @@ class LoanViewTests(LoanTestMixin, TestCase):
         response = self.client.post(
             reverse("loans:update", args=[loan.pk]),
             self.loan_data(
-                borrower_name="Nombre actualizado",
+                borrower_name="Updated name",
                 status=Loan.Status.PAID,
             ),
         )
 
         self.assertRedirects(response, reverse("loans:list"))
         loan.refresh_from_db()
-        self.assertEqual(loan.borrower_name, "Nombre actualizado")
+        self.assertEqual(loan.borrower_name, "Updated name")
         self.assertEqual(loan.status, Loan.Status.PAID)
 
     def test_user_cannot_update_another_users_loan(self):
@@ -168,12 +256,12 @@ class LoanViewTests(LoanTestMixin, TestCase):
 
         response = self.client.post(
             reverse("loans:update", args=[loan.pk]),
-            self.loan_data(borrower_name="Intento de cambio"),
+            self.loan_data(borrower_name="Attempted change"),
         )
 
         self.assertEqual(response.status_code, 404)
         loan.refresh_from_db()
-        self.assertEqual(loan.borrower_name, "María López")
+        self.assertEqual(loan.borrower_name, "Mary Smith")
 
     def test_user_can_delete_own_loan(self):
         loan = self.create_loan()

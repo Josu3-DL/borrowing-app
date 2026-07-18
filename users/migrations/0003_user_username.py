@@ -7,7 +7,7 @@ def populate_usernames(apps, schema_editor):
     used = set()
 
     for user in User.objects.order_by("pk"):
-        base = (user.email.split("@", 1)[0] or f"usuario-{user.pk}")[:140]
+        base = (user.email.split("@", 1)[0] or f"user-{user.pk}")[:140]
         candidate = base
         suffix = 1
 

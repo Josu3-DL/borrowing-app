@@ -32,8 +32,12 @@
         .page-heading p { color: #666; margin-top: 0; }
         .button { background: #175cd3; border-radius: .4rem; color: #fff;
                   padding: .75rem 1.2rem; text-decoration: none; white-space: nowrap; }
-        .filters { align-items: center; display: flex; gap: 1rem; margin: 1.5rem 0; }
-        .filters [aria-current="page"] { font-weight: 700; text-decoration: underline; }
+        .filters { align-items: end; display: grid; gap: 1rem;
+                   grid-template-columns: repeat(4, minmax(9rem, 1fr)) auto;
+                   margin: 1.5rem 0; }
+        .filters label { font-size: .85rem; }
+        .filter-actions { align-items: center; display: flex; gap: .75rem; }
+        .filters .errorlist { grid-column: 1 / -1; margin: 0; }
         .table-wrapper { overflow-x: auto; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border-bottom: 1px solid #ddd; padding: .8rem; text-align: left; }
@@ -47,6 +51,9 @@
         .status-paid { background: #ecfdf3; color: #067647; }
         .form-actions { align-items: center; display: flex; gap: 1rem; }
         button.danger { background: #b42318; }
+        @media (max-width: 800px) {
+            .filters { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
