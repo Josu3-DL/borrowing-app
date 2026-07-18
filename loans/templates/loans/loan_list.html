@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Préstamos | Borrowing App{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Préstamos</h1>
+        <p>Gestiona el dinero que has prestado a otras personas.</p>
+    </div>
+    <a class="button" href="{% url 'loans:create' %}">Nuevo préstamo</a>
+</div>
+
+<nav class="filters" aria-label="Filtrar por estado">
+    <strong>Estado:</strong>
+    <a {% if not selected_status %}aria-current="page"{% endif %} href="{% url 'loans:list' %}">Todos</a>
+    {% for value, label in status_choices %}
+        <a {% if selected_status == value %}aria-current="page"{% endif %}
+           href="{% url 'loans:list' %}?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+</nav>
+
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Prestatario</th>
+                <th>Monto</th>
+                <th>Fecha del préstamo</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+                <tr>
+                    <td>
+                        <strong>{{ loan.borrower_name }}</strong>
+                        {% if loan.borrower_phone %}<small>{{ loan.borrower_phone }}</small>{% endif %}
+                        {% if loan.borrower_email %}<small>{{ loan.borrower_email }}</small>{% endif %}
+                    </td>
+                    <td>{{ loan.amount }}</td>
+                    <td>{{ loan.loan_date }}</td>
+                    <td>{{ loan.due_date }}</td>
+                    <td><span class="status status-{{ loan.status }}">{{ loan.get_status_display }}</span></td>
+                    <td class="actions">
+                        <a href="{% url 'loans:update' loan.pk %}">Editar</a>
+                        <a href="{% url 'loans:delete' loan.pk %}">Eliminar</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No hay préstamos que mostrar.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
