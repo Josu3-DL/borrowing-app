@@ -9,7 +9,7 @@ User = get_user_model()
 
 class AuthenticationTests(TestCase):
     def setUp(self):
-        self.password = "UnaClaveSegura2026!"
+        self.password = "SecurePassword2026!"
         self.user = User.objects.create_user(
             username="ana",
             email="ana@example.com",
@@ -23,11 +23,11 @@ class AuthenticationTests(TestCase):
             {
                 "username": "luis",
                 "first_name": "Luis",
-                "last_name": "Pérez",
+                "last_name": "Smith",
                 "email": "LUIS@example.com",
                 "phone": "8888-8888",
-                "password1": "OtraClaveSegura2026!",
-                "password2": "OtraClaveSegura2026!",
+                "password1": "AnotherSecurePassword2026!",
+                "password2": "AnotherSecurePassword2026!",
             },
         )
 
@@ -42,12 +42,12 @@ class AuthenticationTests(TestCase):
         response = self.client.post(
             reverse("users:register"),
             {
-                "username": "otra-persona",
-                "first_name": "Otra",
-                "last_name": "Persona",
+                "username": "another-person",
+                "first_name": "Another",
+                "last_name": "Person",
                 "email": "ANA@EXAMPLE.COM",
-                "password1": "OtraClaveSegura2026!",
-                "password2": "OtraClaveSegura2026!",
+                "password1": "AnotherSecurePassword2026!",
+                "password2": "AnotherSecurePassword2026!",
             },
         )
 
@@ -60,11 +60,11 @@ class AuthenticationTests(TestCase):
             reverse("users:register"),
             {
                 "username": "ana",
-                "first_name": "Otra",
-                "last_name": "Persona",
-                "email": "otra@example.com",
-                "password1": "OtraClaveSegura2026!",
-                "password2": "OtraClaveSegura2026!",
+                "first_name": "Another",
+                "last_name": "Person",
+                "email": "another@example.com",
+                "password1": "AnotherSecurePassword2026!",
+                "password2": "AnotherSecurePassword2026!",
             },
         )
 
@@ -92,7 +92,7 @@ class AuthenticationTests(TestCase):
     def test_invalid_login_does_not_authenticate(self):
         response = self.client.post(
             reverse("users:login"),
-            {"username": self.user.username, "password": "incorrecta"},
+            {"username": self.user.username, "password": "incorrect"},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -114,7 +114,7 @@ class AuthenticationTests(TestCase):
                 "username": "ana-maria",
                 "first_name": "Ana María",
                 "last_name": "López",
-                "email": "nuevo@example.com",
+                "email": "new@example.com",
                 "phone": "7777-7777",
             },
         )
@@ -123,13 +123,13 @@ class AuthenticationTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, "ana-maria")
         self.assertEqual(self.user.first_name, "Ana María")
-        self.assertEqual(self.user.email, "nuevo@example.com")
+        self.assertEqual(self.user.email, "new@example.com")
 
     def test_profile_rejects_another_users_email_ignoring_case(self):
         User.objects.create_user(
-            username="otra",
-            email="otra@example.com",
-            password="OtraClaveSegura2026!",
+            username="another",
+            email="another@example.com",
+            password="AnotherSecurePassword2026!",
         )
         self.client.force_login(self.user)
 
@@ -139,7 +139,7 @@ class AuthenticationTests(TestCase):
                 "username": "ana",
                 "first_name": "Ana",
                 "last_name": "",
-                "email": "OTRA@EXAMPLE.COM",
+                "email": "ANOTHER@EXAMPLE.COM",
                 "phone": "",
             },
         )
@@ -151,7 +151,7 @@ class AuthenticationTests(TestCase):
 
     def test_database_rejects_case_insensitive_duplicate_email(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
-            User.objects.create(username="otra", email="ANA@EXAMPLE.COM")
+            User.objects.create(username="another", email="ANA@EXAMPLE.COM")
 
     def test_logout_accepts_post_and_ends_session(self):
         self.client.force_login(self.user)
@@ -164,3 +164,9 @@ class AuthenticationTests(TestCase):
         self.client.force_login(self.user)
 
         self.assertEqual(self.client.get(reverse("users:logout")).status_code, 405)
+
+    def test_authentication_routes_use_english_paths(self):
+        self.assertEqual(reverse("users:register"), "/register/")
+        self.assertEqual(reverse("users:login"), "/login/")
+        self.assertEqual(reverse("users:logout"), "/logout/")
+        self.assertEqual(reverse("users:profile"), "/profile/")

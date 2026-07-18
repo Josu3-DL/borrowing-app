@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Borrowing App{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+<p>El prestatario es la persona externa a quien entregaste el dinero.</p>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="form-actions">
+        <button type="submit">Guardar</button>
+        <a href="{% url 'loans:list' %}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

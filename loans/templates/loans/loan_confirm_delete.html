@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Eliminar préstamo | Borrowing App{% endblock %}
+{% block content %}
+<h1>Eliminar préstamo</h1>
+<p>
+    ¿Seguro que deseas eliminar el préstamo de
+    <strong>{{ loan.borrower_name }}</strong> por <strong>{{ loan.amount }}</strong>?
+    Esta acción no se puede deshacer.
+</p>
+<form method="post">
+    {% csrf_token %}
+    <div class="form-actions">
+        <button class="danger" type="submit">Sí, eliminar</button>
+        <a href="{% url 'loans:list' %}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

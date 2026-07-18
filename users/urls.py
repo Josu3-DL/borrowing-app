@@ -8,9 +8,9 @@ app_name = "users"
 
 urlpatterns = [
     path("", views.home, name="home"),
-    path("registro/", views.register, name="register"),
+    path("register/", views.register, name="register"),
     path(
-        "iniciar-sesion/",
+        "login/",
         LoginView.as_view(
             template_name="users/login.html",
             authentication_form=LoginForm,
@@ -18,6 +18,6 @@ urlpatterns = [
         ),
         name="login",
     ),
-    path("cerrar-sesion/", LogoutView.as_view(), name="logout"),
-    path("perfil/", views.profile, name="profile"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("profile/", views.profile, name="profile"),
 ]

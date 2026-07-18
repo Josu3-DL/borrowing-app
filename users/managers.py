@@ -6,9 +6,9 @@ class UserManager(BaseUserManager):
 
     def _create_user(self, username, email, password, **extra_fields):
         if not username:
-            raise ValueError("El nombre de usuario es obligatorio.")
+            raise ValueError("Username is required.")
         if not email:
-            raise ValueError("El correo electrónico es obligatorio.")
+            raise ValueError("Email is required.")
 
         username = self.model.normalize_username(username)
         email = self.normalize_email(email).lower()
@@ -28,8 +28,8 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
 
         if extra_fields.get("is_staff") is not True:
-            raise ValueError("Un superusuario debe tener is_staff=True.")
+            raise ValueError("A superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Un superusuario debe tener is_superuser=True.")
+            raise ValueError("A superuser must have is_superuser=True.")
 
         return self._create_user(username, email, password, **extra_fields)
