@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Crear cuenta | Borrowing App{% endblock %}
+{% block content %}
+<h1>Crear cuenta</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Registrarme</button>
+</form>
+<p>¿Ya tienes una cuenta? <a href="{% url 'users:login' %}">Inicia sesión</a>.</p>
+{% endblock %}
