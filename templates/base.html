@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Borrowing App{% endblock %}</title>
+    <style>
+        :root { color-scheme: light; font-family: system-ui, sans-serif; }
+        body { background: #f4f6f8; color: #182230; margin: 0; }
+        nav { align-items: center; background: #fff; border-bottom: 1px solid #ddd;
+              display: flex; justify-content: space-between; padding: 1rem 5%; }
+        nav a { color: #175cd3; text-decoration: none; }
+        main { margin: 3rem auto; max-width: 34rem; padding: 0 1rem; }
+        .card { background: #fff; border-radius: .75rem; box-shadow: 0 2px 12px #0001;
+                padding: 2rem; }
+        label { display: block; font-weight: 600; margin-bottom: .35rem; }
+        input { border: 1px solid #aaa; border-radius: .4rem; box-sizing: border-box;
+                font: inherit; padding: .7rem; width: 100%; }
+        form p { margin: 1rem 0; }
+        button { background: #175cd3; border: 0; border-radius: .4rem; color: white;
+                 cursor: pointer; font: inherit; padding: .75rem 1.2rem; }
+        .link-button { background: none; color: #175cd3; padding: 0; }
+        .errorlist { color: #b42318; padding-left: 1.2rem; }
+        .messages { list-style: none; padding: 0; }
+        .messages li { background: #ecfdf3; border-radius: .4rem; color: #067647;
+                       margin-bottom: 1rem; padding: .8rem; }
+        .helptext { color: #666; display: block; font-size: .85rem; margin-top: .3rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'users:home' %}"><strong>Borrowing App</strong></a>
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'users:logout' %}">
+                {% csrf_token %}
+                <button class="link-button" type="submit">Cerrar sesión</button>
+            </form>
+        {% endif %}
+    </nav>
+    <main>
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+        <section class="card">{% block content %}{% endblock %}</section>
+    </main>
+</body>
+</html>
