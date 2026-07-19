@@ -3,6 +3,10 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 
+from borrowing_app.form_fields import PHONE_COUNTRIES
+
+from .forms import ProfileForm
+
 
 User = get_user_model()
 
@@ -25,7 +29,8 @@ class AuthenticationTests(TestCase):
                 "first_name": "Luis",
                 "last_name": "Smith",
                 "email": "LUIS@example.com",
-                "phone": "8888-8888",
+                "phone_0": "+505",
+                "phone_1": "88888888",
                 "password1": "AnotherSecurePassword2026!",
                 "password2": "AnotherSecurePassword2026!",
             },
@@ -115,7 +120,8 @@ class AuthenticationTests(TestCase):
                 "first_name": "Ana María",
                 "last_name": "López",
                 "email": "new@example.com",
-                "phone": "7777-7777",
+                "phone_0": "+505",
+                "phone_1": "77777777",
             },
         )
 
@@ -124,6 +130,41 @@ class AuthenticationTests(TestCase):
         self.assertEqual(self.user.username, "ana-maria")
         self.assertEqual(self.user.first_name, "Ana María")
         self.assertEqual(self.user.email, "new@example.com")
+
+    def test_phone_selector_has_searchable_country_options(self):
+        form_html = str(ProfileForm(instance=self.user)["phone"])
+
+        self.assertGreaterEqual(len(PHONE_COUNTRIES), 50)
+        self.assertIn('data-phone-country-select', form_html)
+        self.assertIn('placeholder="Buscar país o prefijo"', form_html)
+        self.assertIn('vendor/flags/ni.svg', form_html)
+        self.assertIn('data-value="+54"', form_html)
+        self.assertIn('Argentina', form_html)
+
+    def test_profile_accepts_an_expanded_phone_prefix(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("users:profile"),
+            {
+                "username": "ana",
+                "first_name": "Ana",
+                "last_name": "",
+                "email": "ana@example.com",
+                "phone_0": "+1809",
+                "phone_1": "1122334455",
+            },
+        )
+
+        self.assertRedirects(response, reverse("users:profile"))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, "+1809 1122334455")
+        self.assertEqual(
+            ProfileForm(instance=self.user).fields["phone"].widget.decompress(
+                self.user.phone
+            ),
+            ["+1809", "1122334455"],
+        )
 
     def test_profile_rejects_another_users_email_ignoring_case(self):
         User.objects.create_user(

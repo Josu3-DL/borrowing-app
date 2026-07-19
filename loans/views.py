@@ -9,41 +9,14 @@ from .forms import LoanFilterForm, LoanForm
 from .models import Loan
 
 
-@login_required
-@require_http_methods(["GET"])
-def dashboard(request):
-    loans = Loan.objects.filter(owner=request.user).prefetch_related("payments")
-
-    usd = [l for l in loans if l.currency == Loan.Currency.USD]
-    nio = [l for l in loans if l.currency == Loan.Currency.NIO]
-
-    def stats(loan_list):
-        total_lent = sum(l.amount for l in loan_list) or Decimal("0")
-        total_recovered = sum(l.total_paid for l in loan_list) or Decimal("0")
-        total_pending = sum(l.remaining_balance for l in loan_list) or Decimal("0")
-        active = sum(1 for l in loan_list if l.status == Loan.Status.PENDING)
-        return {
-            "total_lent": total_lent,
-            "total_recovered": total_recovered,
-            "total_pending": total_pending,
-            "active": active,
-        }
-
-    context = {
-        "usd": stats(usd),
-        "nio": stats(nio),
-        "total_active": sum(1 for l in loans if l.status == Loan.Status.PENDING),
-    }
-    return render(request, "loans/dashboard.html", context)
-
-
-@login_required
-@require_http_methods(["GET"])
-def loan_list(request):
+def _loan_page_context(request, apply_filters=False):
     loans = Loan.objects.filter(owner=request.user)
-    filter_form = LoanFilterForm(request.GET)
+    filter_form = LoanFilterForm(
+        request.GET if apply_filters else None,
+        auto_id="filter_%s",
+    )
 
-    if filter_form.is_valid():
+    if apply_filters and filter_form.is_valid():
         status = filter_form.cleaned_data["status"]
         currency = filter_form.cleaned_data["currency"]
         borrower_name = filter_form.cleaned_data["borrower_name"]
@@ -61,7 +34,13 @@ def loan_list(request):
         if date_to:
             loans = loans.filter(loan_date__lte=date_to)
 
-    context = {"loans": loans, "filter_form": filter_form}
+    return {"loans": loans, "filter_form": filter_form}
+
+
+@login_required
+@require_http_methods(["GET"])
+def loan_list(request):
+    context = _loan_page_context(request, apply_filters=True)
     return render(request, "loans/loan_list.html", context)
 
 
@@ -75,7 +54,10 @@ def loan_create(request):
         loan.save()
         messages.success(request, "Prestamo creado correctamente.")
         return redirect("loans:list")
-    return render(request, "loans/loan_form.html", {"form": form, "title": "Nuevo prestamo"})
+
+    context = _loan_page_context(request)
+    context.update({"form": form, "title": "Nuevo préstamo"})
+    return render(request, "loans/loan_form.html", context)
 
 
 @login_required
@@ -87,7 +69,10 @@ def loan_update(request, pk):
         form.save()
         messages.success(request, "Prestamo actualizado correctamente.")
         return redirect("loans:list")
-    return render(request, "loans/loan_form.html", {"form": form, "title": "Editar prestamo"})
+
+    context = _loan_page_context(request)
+    context.update({"form": form, "title": "Editar préstamo"})
+    return render(request, "loans/loan_form.html", context)
 
 
 @login_required
@@ -98,4 +83,7 @@ def loan_delete(request, pk):
         loan.delete()
         messages.success(request, "Prestamo eliminado correctamente.")
         return redirect("loans:list")
-    return render(request, "loans/loan_confirm_delete.html", {"loan": loan})
+
+    context = _loan_page_context(request)
+    context["loan"] = loan
+    return render(request, "loans/loan_confirm_delete.html", context)

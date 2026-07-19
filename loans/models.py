@@ -50,6 +50,8 @@ class Loan(models.Model):
 
     class Meta:
         ordering = ("-loan_date", "-created_at")
+        verbose_name = "préstamo"
+        verbose_name_plural = "préstamos"
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(amount__gt=0),

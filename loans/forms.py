@@ -1,5 +1,7 @@
 from django import forms
 
+from borrowing_app.form_fields import PhoneField
+
 from .models import Loan
 
 
@@ -18,6 +20,9 @@ class LoanFilterForm(forms.Form):
         label="Nombre del prestatario",
         max_length=150,
         required=False,
+        widget=forms.TextInput(
+            attrs={"placeholder": "Buscar por nombre...", "type": "search"}
+        ),
     )
     date_from = forms.DateField(
         label="Fecha inicial",
@@ -42,6 +47,11 @@ class LoanFilterForm(forms.Form):
 
 
 class LoanForm(forms.ModelForm):
+    borrower_phone = PhoneField(
+        label="Teléfono del prestatario",
+        required=False,
+    )
+
     class Meta:
         model = Loan
         fields = (
@@ -55,6 +65,15 @@ class LoanForm(forms.ModelForm):
             "status",
         )
         widgets = {
+            "borrower_name": forms.TextInput(
+                attrs={"placeholder": "Ej. Juan Pérez", "autocomplete": "name"}
+            ),
+            "borrower_email": forms.EmailInput(
+                attrs={"placeholder": "correo@ejemplo.com", "autocomplete": "email"}
+            ),
+            "amount": forms.NumberInput(
+                attrs={"placeholder": "0.00", "min": "0.01", "step": "0.01"}
+            ),
             "loan_date": forms.DateInput(attrs={"type": "date"}),
             "due_date": forms.DateInput(attrs={"type": "date"}),
         }

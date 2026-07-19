@@ -1,0 +1,131 @@
+<div class="page-heading">
+    <div>
+        <h1>Préstamos</h1>
+        <p>Gestiona y revisa el estado de tus préstamos.</p>
+        <div class="breadcrumb">Panel&nbsp; / &nbsp;<strong>Listado de préstamos</strong></div>
+    </div>
+    <a class="button desktop-create" href="{% url 'loans:create' %}"><i data-lucide="plus" aria-hidden="true"></i> Nuevo préstamo</a>
+</div>
+
+<div class="loan-toolbar">
+    <form class="mobile-search" method="get">
+        <i class="mobile-search-symbol" data-lucide="search" aria-hidden="true"></i>
+        {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+        <input type="search" name="borrower_name" value="{{ request.GET.borrower_name }}" placeholder="Buscar préstamo por nombre..." aria-label="Buscar préstamo por nombre">
+    </form>
+
+    <nav class="status-tabs" aria-label="Filtrar por estado">
+        <a class="status-tab {% if not request.GET.status %}active{% endif %}" href="{% url 'loans:list' %}{% if request.GET.borrower_name %}?borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Todos</a>
+        <a class="status-tab {% if request.GET.status == 'pending' %}active{% endif %}" href="?status=pending{% if request.GET.borrower_name %}&amp;borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Pendientes</a>
+        <a class="status-tab {% if request.GET.status == 'paid' %}active{% endif %}" href="?status=paid{% if request.GET.borrower_name %}&amp;borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Pagados</a>
+    </nav>
+
+    <div class="toolbar-actions">
+        <details class="filter-dropdown" {% if request.GET.borrower_name or request.GET.date_from or request.GET.date_to %}open{% endif %}>
+            <summary class="outline-button"><i data-lucide="list-filter" aria-hidden="true"></i> Filtrar</summary>
+            <form class="filter-panel" method="get">
+                {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+                <div class="filter-grid">
+                    <div class="field search-field">
+                        {{ filter_form.borrower_name.label_tag }}
+                        {{ filter_form.borrower_name }}
+                    </div>
+                    <div class="field">
+                        {{ filter_form.date_from.label_tag }}
+                        {{ filter_form.date_from }}
+                    </div>
+                    <div class="field">
+                        {{ filter_form.date_to.label_tag }}
+                        {{ filter_form.date_to }}
+                    </div>
+                </div>
+                {{ filter_form.non_field_errors }}
+                <div class="filter-actions">
+                    <a class="text-link" href="{% url 'loans:list' %}">Limpiar</a>
+                    <button class="primary" type="submit">Aplicar filtros</button>
+                </div>
+            </form>
+        </details>
+        <span class="outline-button"><i data-lucide="calendar-days" aria-hidden="true"></i> Este mes</span>
+    </div>
+</div>
+
+<section class="loan-table-card" aria-label="Listado de préstamos">
+    <table class="loan-table">
+        <colgroup>
+            <col style="width: 27%">
+            <col style="width: 15%">
+            <col style="width: 15%">
+            <col style="width: 15%">
+            <col style="width: 14%">
+            <col style="width: 14%">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Persona</th>
+                <th>Monto</th>
+                <th>Inicio</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+                <tr>
+                    <td>
+                        <div class="borrower">
+                            <span class="avatar borrower-avatar">{{ loan.borrower_name|slice:":2"|upper }}</span>
+                            <span>
+                                <strong>{{ loan.borrower_name }}</strong>
+                                {% if loan.borrower_phone %}<small>{{ loan.borrower_phone }}</small>{% endif %}
+                                {% if loan.borrower_email %}<small>{{ loan.borrower_email }}</small>{% endif %}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="money">${{ loan.amount }}</td>
+                    <td>{{ loan.loan_date|date:"d M Y" }}</td>
+                    <td>{{ loan.due_date|date:"d M Y" }}</td>
+                    <td><span class="status status-{{ loan.status }}">{{ loan.get_status_display }}</span></td>
+                    <td class="actions">
+                        <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i></a>
+                        <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}" title="Eliminar"><i data-lucide="trash-2" aria-hidden="true"></i></a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td class="empty-state" colspan="6">No hay préstamos que mostrar con estos filtros.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="loan-cards" aria-label="Listado de préstamos">
+    {% for loan in loans %}
+        <article class="loan-card {{ loan.status }}">
+            <div class="loan-card-head">
+                <div>
+                    <h2>{{ loan.borrower_name }}</h2>
+                    <p class="loan-contact">
+                        {% if loan.borrower_phone %}{{ loan.borrower_phone }}{% endif %}
+                        {% if loan.borrower_phone and loan.borrower_email %} · {% endif %}
+                        {% if loan.borrower_email %}{{ loan.borrower_email }}{% endif %}
+                    </p>
+                </div>
+                <span class="status status-{{ loan.status }}">{{ loan.get_status_display|upper }}</span>
+            </div>
+            <div class="loan-card-details">
+                <div><span>Monto total</span><strong class="money">${{ loan.amount }}</strong></div>
+                <div><span>Vencimiento</span><strong>{{ loan.due_date|date:"d/m/Y" }}</strong></div>
+            </div>
+            <div class="loan-card-dates"><span>Inicio: {{ loan.loan_date|date:"d/m/Y" }}</span></div>
+            <div class="loan-card-actions">
+                <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}"><i data-lucide="pencil" aria-hidden="true"></i></a>
+                <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}"><i data-lucide="trash-2" aria-hidden="true"></i></a>
+            </div>
+        </article>
+    {% empty %}
+        <div class="empty-mobile">No hay préstamos que mostrar con estos filtros.</div>
+    {% endfor %}
+</section>
+
+<a class="fab" href="{% url 'loans:create' %}" aria-label="Crear préstamo"><i data-lucide="plus" aria-hidden="true"></i></a>

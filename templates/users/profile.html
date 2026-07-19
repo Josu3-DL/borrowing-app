@@ -1,10 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Mi perfil | Borrowing App{% endblock %}
+{% block title %}Mi perfil | Borrowing{% endblock %}
 {% block content %}
-<h1>Mi perfil</h1>
-<form method="post" novalidate>
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Guardar cambios</button>
-</form>
+<header class="profile-heading">
+    <h1>Mi perfil</h1>
+    <p>Gestiona tu información personal y los datos de tu cuenta.</p>
+</header>
+
+<div class="profile-layout">
+    <section class="profile-card">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="field-errors">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="profile-form-grid">
+                <div class="field full">
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                    {{ form.username.errors }}
+                </div>
+                <div class="field">
+                    {{ form.first_name.label_tag }}
+                    {{ form.first_name }}
+                    {{ form.first_name.errors }}
+                </div>
+                <div class="field">
+                    {{ form.last_name.label_tag }}
+                    {{ form.last_name }}
+                    {{ form.last_name.errors }}
+                </div>
+                <div class="field full">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                    {{ form.email.errors }}
+                </div>
+                <div class="field full">
+                    {{ form.phone.label_tag }}
+                    {{ form.phone }}
+                    {{ form.phone.errors }}
+                </div>
+            </div>
+            <div class="profile-actions">
+                <a class="secondary-button" href="{% url 'loans:list' %}">Cancelar</a>
+                <button class="primary" type="submit"><i data-lucide="save" aria-hidden="true"></i> Guardar cambios</button>
+            </div>
+        </form>
+    </section>
+
+    <aside class="profile-card profile-summary">
+        <div class="profile-avatar">{{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|upper }}</div>
+        <div>
+            <h2>{{ user.get_full_name|default:user.username }}</h2>
+            <p>Cuenta personal</p>
+        </div>
+    </aside>
+</div>
 {% endblock %}
