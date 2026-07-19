@@ -25,7 +25,8 @@ class AuthenticationTests(TestCase):
                 "first_name": "Luis",
                 "last_name": "Smith",
                 "email": "LUIS@example.com",
-                "phone": "8888-8888",
+                "phone_0": "+505",
+                "phone_1": "88888888",
                 "password1": "AnotherSecurePassword2026!",
                 "password2": "AnotherSecurePassword2026!",
             },
@@ -115,7 +116,8 @@ class AuthenticationTests(TestCase):
                 "first_name": "Ana María",
                 "last_name": "López",
                 "email": "new@example.com",
-                "phone": "7777-7777",
+                "phone_0": "+505",
+                "phone_1": "77777777",
             },
         )
 

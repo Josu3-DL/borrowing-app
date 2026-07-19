@@ -1,11 +1,91 @@
 {% extends "base.html" %}
-{% block title %}Crear cuenta | Borrowing App{% endblock %}
-{% block content %}
-<h1>Crear cuenta</h1>
-<form method="post" novalidate>
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Registrarme</button>
-</form>
-<p>¿Ya tienes una cuenta? <a href="{% url 'users:login' %}">Inicia sesión</a>.</p>
+{% block title %}Crear cuenta | Borrowing{% endblock %}
+{% block auth_content %}
+<div class="auth-layout">
+    <aside class="auth-visual" aria-hidden="true">
+        <div class="auth-brand"><span class="auth-brand-mark"><i data-lucide="landmark" aria-hidden="true"></i></span>Borrowing</div>
+        <div class="auth-pitch">
+            <h2>Empieza a organizar tus préstamos.</h2>
+            <p>Registra a quién prestaste, consulta fechas de vencimiento y mantén cada movimiento bajo control.</p>
+            <div class="portfolio-card">
+                <span>Gestión segura</span>
+                <strong>Tu información, siempre organizada</strong>
+                <div class="portfolio-progress"><i></i></div>
+            </div>
+        </div>
+        <div class="auth-proof">
+            <div class="proof-avatars"><span>JP</span><span>LV</span><span>DR</span></div>
+            <strong>Una forma más clara de prestar.</strong>
+        </div>
+    </aside>
+
+    <section class="auth-panel">
+        <div class="auth-form-wrap">
+            <div class="auth-mobile-brand" aria-hidden="true">
+                <span class="auth-brand-mark"><i data-lucide="landmark" aria-hidden="true"></i></span>
+                <strong>Borrowing</strong>
+            </div>
+            <h1>Crear cuenta</h1>
+            <p class="auth-subtitle">Comienza a gestionar tus préstamos de forma profesional.</p>
+
+            <form class="auth-form" method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="field-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="auth-form-grid">
+                    <div class="field full">
+                        {{ form.username.label_tag }}
+                        {{ form.username }}
+                        {{ form.username.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.first_name.label_tag }}
+                        {{ form.first_name }}
+                        {{ form.first_name.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.last_name.label_tag }}
+                        {{ form.last_name }}
+                        {{ form.last_name.errors }}
+                    </div>
+                    <div class="field mobile-full">
+                        {{ form.email.label_tag }}
+                        {{ form.email }}
+                        {{ form.email.errors }}
+                    </div>
+                    <div class="field mobile-full">
+                        {{ form.phone.label_tag }}
+                        {{ form.phone }}
+                        {{ form.phone.errors }}
+                    </div>
+                    <div class="field mobile-full">
+                        {{ form.password1.label_tag }}
+                        <div class="password-control">
+                            {{ form.password1 }}
+                            <button class="password-toggle" type="button" data-password-toggle="{{ form.password1.id_for_label }}" aria-label="Mostrar contraseña" aria-pressed="false">
+                                <i class="password-icon" data-lucide="eye" aria-hidden="true"></i>
+                                <span class="sr-only">Mostrar contraseña</span>
+                            </button>
+                        </div>
+                        {{ form.password1.errors }}
+                    </div>
+                    <div class="field mobile-full">
+                        {{ form.password2.label_tag }}
+                        <div class="password-control">
+                            {{ form.password2 }}
+                            <button class="password-toggle" type="button" data-password-toggle="{{ form.password2.id_for_label }}" aria-label="Mostrar contraseña" aria-pressed="false">
+                                <i class="password-icon" data-lucide="eye" aria-hidden="true"></i>
+                                <span class="sr-only">Mostrar contraseña</span>
+                            </button>
+                        </div>
+                        {{ form.password2.errors }}
+                    </div>
+                </div>
+                <button class="primary auth-submit" type="submit">Registrarse <i data-lucide="user-plus" aria-hidden="true"></i></button>
+            </form>
+
+            <p class="auth-switch">¿Ya tienes una cuenta? <a href="{% url 'users:login' %}">Iniciar sesión</a></p>
+            <p class="auth-copyright">© 2026 Borrowing · Gestión de préstamos. Todos los derechos reservados.</p>
+        </div>
+    </section>
+</div>
 {% endblock %}

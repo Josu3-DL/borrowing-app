@@ -1,82 +1,880 @@
+{% load static %}
 <!doctype html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Borrowing App{% endblock %}</title>
+    <title>{% block title %}Borrowing{% endblock %}</title>
+    <script src="{% static 'vendor/lucide.min.js' %}" defer></script>
     <style>
-        :root { color-scheme: light; font-family: system-ui, sans-serif; }
-        body { background: #f4f6f8; color: #182230; margin: 0; }
-        nav { align-items: center; background: #fff; border-bottom: 1px solid #ddd;
-              display: flex; justify-content: space-between; padding: 1rem 5%; }
-        nav a { color: #175cd3; text-decoration: none; }
-        main { margin: 3rem auto; max-width: 72rem; padding: 0 1rem; }
-        .card { background: #fff; border-radius: .75rem; box-shadow: 0 2px 12px #0001;
-                padding: 2rem; }
-        label { display: block; font-weight: 600; margin-bottom: .35rem; }
-        input, select { border: 1px solid #aaa; border-radius: .4rem;
-                        box-sizing: border-box; font: inherit; padding: .7rem; width: 100%; }
-        form p { margin: 1rem 0; }
-        button { background: #175cd3; border: 0; border-radius: .4rem; color: white;
-                 cursor: pointer; font: inherit; padding: .75rem 1.2rem; }
-        .link-button { background: none; color: #175cd3; padding: 0; }
-        .errorlist { color: #b42318; padding-left: 1.2rem; }
-        .messages { list-style: none; padding: 0; }
-        .messages li { background: #ecfdf3; border-radius: .4rem; color: #067647;
-                       margin-bottom: 1rem; padding: .8rem; }
-        .helptext { color: #666; display: block; font-size: .85rem; margin-top: .3rem; }
-        .nav-links { align-items: center; display: flex; gap: 1rem; }
-        .page-heading { align-items: center; display: flex; gap: 1rem;
-                        justify-content: space-between; }
-        .page-heading h1 { margin-bottom: .25rem; }
-        .page-heading p { color: #666; margin-top: 0; }
-        .button { background: #175cd3; border-radius: .4rem; color: #fff;
-                  padding: .75rem 1.2rem; text-decoration: none; white-space: nowrap; }
-        .filters { align-items: end; display: grid; gap: 1rem;
-                   grid-template-columns: repeat(4, minmax(9rem, 1fr)) auto;
-                   margin: 1.5rem 0; }
-        .filters label { font-size: .85rem; }
-        .filter-actions { align-items: center; display: flex; gap: .75rem; }
-        .filters .errorlist { grid-column: 1 / -1; margin: 0; }
-        .table-wrapper { overflow-x: auto; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border-bottom: 1px solid #ddd; padding: .8rem; text-align: left; }
-        th { background: #f8fafc; }
-        td small { color: #666; display: block; margin-top: .2rem; }
+        :root {
+            color-scheme: light;
+            --primary: #2563eb;
+            --primary-strong: #0756d8;
+            --primary-soft: #e8efff;
+            --secondary: #f9fafb;
+            --surface: #ffffff;
+            --canvas: #f6f7fc;
+            --neutral: #111827;
+            --muted: #667085;
+            --border: #d8ddea;
+            --danger: #dc2626;
+            --danger-soft: #feecec;
+            --success: #087a55;
+            --success-soft: #dcfaeb;
+            --warning: #a45600;
+            --warning-soft: #fff3d6;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+        html { min-height: 100%; }
+        body { background: var(--canvas); color: var(--neutral); margin: 0; min-height: 100vh; }
+        button, input, select { font: inherit; }
+        button, a { -webkit-tap-highlight-color: transparent; }
+        a { color: inherit; }
+
+        .app-shell { min-height: 100vh; }
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            left: 0;
+            padding: 28px 16px 24px;
+            position: fixed;
+            top: 0;
+            width: 260px;
+            z-index: 30;
+        }
+        .brand { color: var(--primary-strong); display: block; margin: 0 16px 38px; text-decoration: none; }
+        .brand strong { display: block; font-size: 24px; letter-spacing: -.04em; line-height: 1.1; }
+        .brand span { color: #475467; display: block; font-size: 13px; margin-top: 4px; }
+        .side-nav { display: grid; gap: 7px; }
+        .nav-item {
+            align-items: center;
+            border-radius: 9px;
+            color: #475467;
+            display: flex;
+            font-size: 15px;
+            font-weight: 500;
+            gap: 13px;
+            min-height: 48px;
+            padding: 0 18px;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: #f3f6fc; color: var(--primary-strong); }
+        .nav-item.active { background: var(--primary); color: #fff; font-weight: 700; }
+        .nav-icon { font-size: 20px; line-height: 1; width: 20px; }
+        .logout-form { border-top: 1px solid var(--border); margin-top: auto; padding-top: 22px; }
+        .logout-button { background: none; border: 0; cursor: pointer; width: 100%; }
+
+        .topbar {
+            align-items: center;
+            background: rgba(249, 250, 255, .94);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            height: 64px;
+            justify-content: space-between;
+            left: 260px;
+            padding: 0 28px 0 38px;
+            position: fixed;
+            right: 0;
+            top: 0;
+            z-index: 20;
+        }
+        .global-search {
+            align-items: center;
+            background: #eef2ff;
+            border-radius: 9px;
+            color: var(--muted);
+            display: flex;
+            gap: 10px;
+            height: 40px;
+            padding: 0 14px;
+            width: min(280px, 32vw);
+        }
+        .topbar-user { align-items: center; display: flex; gap: 16px; }
+        .notification { font-size: 20px; position: relative; }
+        .notification::after {
+            background: #d92d20;
+            border: 2px solid var(--surface);
+            border-radius: 999px;
+            content: "";
+            height: 7px;
+            position: absolute;
+            right: -1px;
+            top: 0;
+            width: 7px;
+        }
+        .avatar {
+            align-items: center;
+            background: #dfe7fb;
+            border: 1px solid #cad5ee;
+            border-radius: 50%;
+            color: var(--primary-strong);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            height: 34px;
+            justify-content: center;
+            width: 34px;
+        }
+        .user-name { font-weight: 700; }
+
+        .page-main { margin-left: 260px; min-height: 100vh; padding: 98px 6vw 48px; }
+        .content-wrap { margin: 0 auto; max-width: 1220px; }
+        .flash-messages { list-style: none; margin: 0 auto 16px; max-width: 1220px; padding: 0; }
+        .flash-messages li {
+            background: var(--success-soft);
+            border: 1px solid #a7e9ce;
+            border-radius: 10px;
+            color: var(--success);
+            padding: 12px 16px;
+        }
+
+        .mobile-header, .mobile-bottom-nav { display: none; }
+        .page-heading { align-items: end; display: flex; justify-content: space-between; margin-bottom: 32px; }
+        .page-heading h1 { font-size: clamp(30px, 3vw, 40px); letter-spacing: -.04em; line-height: 1; margin: 0 0 10px; }
+        .page-heading p { color: #475467; margin: 0; }
+        .breadcrumb { color: #475467; font-size: 14px; margin-top: 10px; }
+        .breadcrumb strong { color: var(--neutral); }
+        .button, button.primary {
+            align-items: center;
+            background: var(--primary-strong);
+            border: 0;
+            border-radius: 11px;
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            font-weight: 700;
+            gap: 9px;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 24px;
+            text-decoration: none;
+        }
+        .button:hover, button.primary:hover { background: #044bc0; }
+        .button:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 3px solid #9bb8ff;
+            outline-offset: 2px;
+        }
+
+        .loan-toolbar {
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            min-height: 76px;
+            padding: 12px 16px;
+        }
+        .status-tabs { display: flex; gap: 6px; }
+        .status-tab {
+            border-radius: 9px;
+            color: #475467;
+            font-weight: 500;
+            padding: 11px 16px;
+            text-decoration: none;
+        }
+        .status-tab:hover { color: var(--primary-strong); }
+        .status-tab.active { background: var(--primary-soft); color: var(--primary-strong); font-weight: 700; }
+        .toolbar-actions { align-items: center; display: flex; gap: 10px; }
+        .outline-button {
+            align-items: center;
+            background: #f8f9fd;
+            border: 1px solid #cbd2e3;
+            border-radius: 9px;
+            color: #344054;
+            cursor: pointer;
+            display: inline-flex;
+            gap: 8px;
+            min-height: 42px;
+            padding: 0 15px;
+            text-decoration: none;
+        }
+        .lucide { display: inline-block; flex: 0 0 auto; height: 18px; stroke-width: 2; width: 18px; }
+        .icon-action .lucide { height: 16px; width: 16px; }
+        .modal-close .lucide { height: 20px; width: 20px; }
+        .fab .lucide { height: 25px; width: 25px; }
+        details.filter-dropdown { position: relative; }
+        details.filter-dropdown summary { list-style: none; }
+        details.filter-dropdown summary::-webkit-details-marker { display: none; }
+        .filter-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 16px 40px rgba(17, 24, 39, .12);
+            padding: 18px;
+            position: absolute;
+            right: 0;
+            top: 50px;
+            width: 520px;
+            z-index: 12;
+        }
+        .filter-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+        .filter-grid .search-field { grid-column: 1 / -1; }
+        .filter-actions { align-items: center; display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+        .text-link { color: var(--primary-strong); font-weight: 600; text-decoration: none; }
+
+        .field label { color: #344054; display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+        .field-requirement {
+            border-radius: 999px;
+            color: #667085;
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: .01em;
+            margin-left: 7px;
+            padding: 2px 6px;
+            vertical-align: 1px;
+        }
+        .field-requirement.required { background: var(--primary-soft); color: var(--primary-strong); }
+        .field-requirement.optional { background: #f0f2f5; }
+        .field input, .field select {
+            background: #fbfcff;
+            border: 1px solid #cbd2e3;
+            border-radius: 9px;
+            color: var(--neutral);
+            height: 43px;
+            padding: 0 12px;
+            width: 100%;
+        }
+        .field input::placeholder { color: #98a2b3; }
+        .field input:focus, .field select:focus { border-color: var(--primary); outline: 3px solid #e1e9ff; }
+        .phone-control { display: grid; gap: 9px; grid-template-columns: minmax(122px, .75fr) minmax(135px, 1.25fr); }
+        .phone-control .phone-prefix, .phone-control .phone-number { min-width: 0; }
+        .auth-form .phone-control input, .auth-form .phone-control select,
+        .profile-card .phone-control input, .profile-card .phone-control select { height: 46px; }
+        .field.has-live-error input, .field.has-live-error select { border-color: var(--danger); }
+        .field.has-live-error input:focus, .field.has-live-error select:focus { outline-color: var(--danger-soft); }
+        .live-feedback { font-size: 11px; line-height: 1.35; min-height: 15px; padding-top: 4px; }
+        .live-feedback.error { color: var(--danger); }
+        .live-feedback.success { color: var(--success); }
+        .field-errors, .errorlist { color: var(--danger); font-size: 12px; list-style: none; margin: 6px 0 0; padding: 0; }
+
+        .loan-table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .loan-table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+        .loan-table th {
+            background: #f1f3fc;
+            color: #344054;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 18px 16px;
+            text-align: left;
+        }
+        .loan-table td { border-top: 1px solid var(--border); padding: 18px 16px; vertical-align: middle; }
+        .loan-table tbody tr:hover { background: #fbfcff; }
+        .borrower { align-items: center; display: flex; gap: 11px; }
+        .borrower-avatar { flex: 0 0 32px; height: 32px; width: 32px; }
+        .borrower strong { display: block; }
+        .borrower small { color: var(--muted); display: block; font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; }
+        .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .status {
+            border-radius: 999px;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+        }
+        .status-pending { background: var(--warning-soft); color: var(--warning); }
+        .status-paid { background: var(--success-soft); color: var(--success); }
         .actions { white-space: nowrap; }
-        .actions a + a { margin-left: .75rem; }
-        .status { border-radius: 999px; display: inline-block; font-size: .85rem;
-                  font-weight: 700; padding: .25rem .55rem; }
-        .status-pending { background: #fffaeb; color: #b54708; }
-        .status-paid { background: #ecfdf3; color: #067647; }
-        .form-actions { align-items: center; display: flex; gap: 1rem; }
-        button.danger { background: #b42318; }
-        @media (max-width: 800px) {
-            .filters { grid-template-columns: 1fr 1fr; }
+        .icon-action {
+            align-items: center;
+            border-radius: 7px;
+            color: #475467;
+            display: inline-flex;
+            font-size: 17px;
+            height: 34px;
+            justify-content: center;
+            text-decoration: none;
+            width: 34px;
+        }
+        .icon-action:hover { background: var(--primary-soft); color: var(--primary-strong); }
+        .icon-action.delete:hover { background: var(--danger-soft); color: var(--danger); }
+        .empty-state { color: var(--muted); padding: 56px 20px !important; text-align: center; }
+
+        .loan-cards { display: none; }
+        .modal-backdrop {
+            align-items: center;
+            background: rgba(36, 43, 58, .32);
+            display: flex;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 100;
+        }
+        .modal-card {
+            background: var(--surface);
+            border-radius: 18px;
+            box-shadow: 0 24px 65px rgba(17, 24, 39, .22);
+            max-height: calc(100vh - 48px);
+            overflow-y: auto;
+            width: min(650px, 100%);
+        }
+        .modal-header { align-items: flex-start; background: #f2f4fd; border-bottom: 1px solid var(--border); border-radius: 18px 18px 0 0; display: flex; justify-content: space-between; padding: 20px 24px; }
+        .modal-header h1 { font-size: 20px; margin: 0 0 3px; }
+        .modal-header p { color: var(--muted); font-size: 12px; margin: 0; }
+        .modal-close { border-radius: 8px; color: #475467; font-size: 24px; line-height: 1; padding: 2px 5px; text-decoration: none; }
+        .loan-form-body { padding: 24px; }
+        .loan-form-grid { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+        .loan-form-grid .full { grid-column: 1 / -1; }
+        .modal-footer {
+            align-items: center;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            justify-content: flex-end;
+            padding: 16px 24px;
+        }
+        .cancel-link { color: #475467; font-size: 14px; text-decoration: none; }
+        .modal-footer .primary { min-height: 44px; }
+        .delete-copy { color: #475467; line-height: 1.6; padding: 28px 24px; }
+        button.danger { background: var(--danger); border: 0; border-radius: 9px; color: #fff; cursor: pointer; font-weight: 700; min-height: 44px; padding: 0 18px; }
+        .fab { display: none; }
+
+        .profile-heading { margin-bottom: 30px; }
+        .profile-heading h1 { font-size: clamp(30px, 3vw, 40px); letter-spacing: -.04em; margin: 0 0 8px; }
+        .profile-heading p { color: var(--muted); margin: 0; }
+        .profile-layout { align-items: start; display: grid; gap: 24px; grid-template-columns: minmax(0, 2fr) minmax(230px, .8fr); }
+        .profile-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 26px; }
+        .profile-form-grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
+        .profile-form-grid .full { grid-column: 1 / -1; }
+        .profile-card .field input {
+            background: #f0f3ff;
+            border: 1px solid #d5dbea;
+            border-radius: 9px;
+            height: 46px;
+            padding: 0 14px;
+            width: 100%;
+        }
+        .profile-actions { border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 22px; }
+        .secondary-button { align-items: center; background: var(--surface); border: 1px solid #cbd2e3; border-radius: 9px; color: #475467; display: inline-flex; font-weight: 600; justify-content: center; min-height: 44px; padding: 0 20px; text-decoration: none; }
+        .profile-summary { text-align: center; }
+        .profile-avatar {
+            align-items: center;
+            background: linear-gradient(145deg, #dfe8ff, #b7ccff);
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            color: var(--primary-strong);
+            display: flex;
+            font-size: 28px;
+            font-weight: 800;
+            height: 92px;
+            justify-content: center;
+            margin: 0 auto 14px;
+            width: 92px;
+        }
+        .profile-summary h2 { font-size: 18px; margin: 0 0 4px; }
+        .profile-summary p { color: var(--muted); font-size: 12px; margin: 0; }
+
+        .auth-main { background: var(--surface); min-height: 100vh; }
+        .auth-layout { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(440px, 1fr); min-height: 100vh; }
+        .auth-visual {
+            background:
+                radial-gradient(circle at 15% 18%, rgba(255,255,255,.08), transparent 18%),
+                radial-gradient(circle at 92% 7%, rgba(255,255,255,.08), transparent 24%),
+                linear-gradient(145deg, #3978f0 0%, #0756d8 68%, #064dc3 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 48px clamp(36px, 5vw, 76px);
+            position: relative;
+        }
+        .auth-visual::after {
+            background:
+                linear-gradient(30deg, transparent 42%, rgba(255,255,255,.08) 43%, rgba(255,255,255,.08) 44%, transparent 45%),
+                linear-gradient(150deg, transparent 42%, rgba(255,255,255,.08) 43%, rgba(255,255,255,.08) 44%, transparent 45%);
+            bottom: -80px;
+            content: "";
+            height: 360px;
+            left: -80px;
+            opacity: .7;
+            position: absolute;
+            transform: skewY(-6deg);
+            width: calc(100% + 160px);
+        }
+        .auth-brand { align-items: center; display: flex; font-size: 21px; font-weight: 800; gap: 11px; letter-spacing: -.03em; position: relative; z-index: 1; }
+        .auth-brand-mark {
+            align-items: center;
+            background: rgba(255,255,255,.16);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 10px;
+            display: inline-flex;
+            font-size: 23px;
+            height: 43px;
+            justify-content: center;
+            width: 43px;
+        }
+        .auth-brand-mark .lucide { height: 23px; width: 23px; }
+        .auth-pitch { max-width: 610px; position: relative; z-index: 1; }
+        .auth-pitch h2 { font-size: clamp(34px, 4vw, 55px); letter-spacing: -.045em; line-height: 1.08; margin: 0 0 22px; }
+        .auth-pitch > p { color: #dbe7ff; font-size: 16px; line-height: 1.65; margin: 0; max-width: 560px; }
+        .portfolio-card {
+            background: rgba(255,255,255,.11);
+            border: 1px solid rgba(255,255,255,.17);
+            border-radius: 12px;
+            margin-top: 34px;
+            padding: 20px;
+        }
+        .portfolio-card span { color: #dbe7ff; display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .portfolio-card strong { display: block; font-size: 20px; margin-top: 4px; }
+        .portfolio-progress { background: rgba(255,255,255,.2); border-radius: 999px; height: 5px; margin-top: 24px; overflow: hidden; }
+        .portfolio-progress i { background: #fff; border-radius: inherit; display: block; height: 100%; width: 67%; }
+        .auth-proof { align-items: center; color: #e8efff; display: flex; font-size: 12px; gap: 12px; position: relative; z-index: 1; }
+        .proof-avatars { display: flex; }
+        .proof-avatars span { align-items: center; background: #dce6fb; border: 2px solid #fff; border-radius: 50%; color: var(--primary-strong); display: flex; font-size: 9px; font-weight: 800; height: 30px; justify-content: center; margin-left: -7px; width: 30px; }
+        .proof-avatars span:first-child { margin-left: 0; }
+
+        .auth-panel {
+            align-items: center;
+            background: #fbfbff;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 50px clamp(34px, 7vw, 105px);
+        }
+        .auth-form-wrap { max-width: 500px; width: 100%; }
+        .auth-mobile-brand { color: var(--primary-strong); display: none; text-align: center; }
+        .auth-mobile-brand .auth-brand-mark { background: var(--primary); color: #fff; margin: 0 auto 8px; }
+        .auth-mobile-brand strong { display: block; font-size: 18px; }
+        .auth-form-wrap h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.035em; margin: 0 0 8px; }
+        .auth-subtitle { color: var(--muted); line-height: 1.45; margin: 0 0 28px; }
+        .auth-form { display: grid; gap: 16px; }
+        .auth-form .field label { font-size: 12px; }
+        .auth-form .field input {
+            background: var(--surface);
+            border: 1px solid #cbd2e3;
+            border-radius: 9px;
+            height: 46px;
+            padding: 0 14px;
+            width: 100%;
+        }
+        .auth-form .field input:focus { border-color: var(--primary); outline: 3px solid #e1e9ff; }
+        .password-control { position: relative; }
+        .auth-form .password-control input { padding-right: 48px; }
+        .password-toggle {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            color: #667085;
+            cursor: pointer;
+            display: flex;
+            height: 36px;
+            justify-content: center;
+            padding: 0;
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            width: 38px;
+        }
+        .password-toggle:hover { background: var(--primary-soft); color: var(--primary-strong); }
+        .password-toggle .lucide { height: 17px; width: 17px; }
+        .sr-only {
+            clip: rect(0, 0, 0, 0);
+            clip-path: inset(50%);
+            height: 1px;
+            overflow: hidden;
+            position: absolute;
+            white-space: nowrap;
+            width: 1px;
+        }
+        .auth-form-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+        .auth-form-grid .full { grid-column: 1 / -1; }
+        .auth-submit { margin-top: 3px; width: 100%; }
+        .auth-switch { color: #667085; font-size: 13px; margin: 24px 0 0; text-align: center; }
+        .auth-switch a { color: var(--primary-strong); font-weight: 700; text-decoration: none; }
+        .auth-copyright { color: #7a8293; font-size: 11px; margin-top: 34px; text-align: center; }
+
+        @media (max-width: 1050px) {
+            .page-main { padding-left: 34px; padding-right: 34px; }
+            .loan-table th, .loan-table td { padding-left: 11px; padding-right: 11px; }
+            .loan-table th:nth-child(3), .loan-table td:nth-child(3) { display: none; }
+        }
+
+        @media (max-width: 900px) {
+            body { background: #f8f9fd; padding-bottom: 76px; }
+            .sidebar, .topbar { display: none; }
+            .mobile-header {
+                align-items: center;
+                background: rgba(255, 255, 255, .96);
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                height: 66px;
+                justify-content: space-between;
+                padding: 0 20px;
+                position: sticky;
+                top: 0;
+                z-index: 20;
+            }
+            .mobile-brand { color: var(--primary-strong); font-size: 15px; font-weight: 800; text-decoration: none; }
+            .mobile-user { align-items: center; display: flex; gap: 14px; }
+            .page-main { margin: 0; padding: 22px 18px 30px; }
+            .content-wrap { max-width: none; }
+            .flash-messages { margin-bottom: 14px; }
+            .page-heading { align-items: flex-start; margin-bottom: 22px; }
+            .page-heading h1 { font-size: 24px; margin-bottom: 5px; }
+            .page-heading p { font-size: 13px; }
+            .breadcrumb, .desktop-create { display: none; }
+
+            .loan-toolbar { background: transparent; border: 0; display: block; margin: 0 0 24px; min-height: 0; padding: 0; }
+            .mobile-search { display: flex !important; margin-bottom: 14px; }
+            .mobile-search input {
+                background: var(--surface);
+                border: 1px solid #cbd2e3;
+                border-radius: 11px;
+                height: 48px;
+                padding: 0 14px 0 42px;
+                width: 100%;
+            }
+            .mobile-search-symbol { color: var(--muted); font-size: 22px; left: 14px; position: absolute; top: 10px; }
+            .mobile-search { position: relative; }
+            .status-tabs { gap: 7px; overflow-x: auto; scrollbar-width: none; }
+            .status-tab { background: var(--primary-soft); flex: 0 0 auto; font-size: 12px; padding: 7px 15px; }
+            .status-tab.active { background: var(--primary); color: #fff; }
+            .toolbar-actions { display: none; }
+            .loan-table-card { display: none; }
+            .loan-cards { display: grid; gap: 14px; }
+            .loan-card {
+                background: var(--surface);
+                border: 1px solid #e4e7ef;
+                border-radius: 13px;
+                box-shadow: 0 1px 3px rgba(17, 24, 39, .05);
+                padding: 17px;
+                position: relative;
+            }
+            .loan-card.pending { border-left: 4px solid var(--primary); padding-left: 14px; }
+            .loan-card-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; }
+            .loan-card h2 { font-size: 16px; margin: 0 0 4px; }
+            .loan-contact { color: var(--muted); font-size: 11px; margin: 0; }
+            .loan-card-details { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; margin: 20px 0 15px; }
+            .loan-card-details span { color: var(--muted); display: block; font-size: 10px; font-weight: 700; margin-bottom: 3px; text-transform: uppercase; }
+            .loan-card-details strong { font-size: 18px; }
+            .loan-card-dates { border-top: 1px solid #eef0f5; color: #667085; display: flex; font-size: 11px; gap: 16px; justify-content: space-between; padding-top: 12px; }
+            .loan-card-actions { display: flex; gap: 4px; position: absolute; right: 12px; bottom: 9px; }
+            .loan-card .icon-action { height: 32px; width: 32px; }
+            .empty-mobile { background: var(--surface); border: 1px dashed var(--border); border-radius: 13px; color: var(--muted); padding: 48px 20px; text-align: center; }
+
+            .mobile-bottom-nav {
+                align-items: center;
+                background: rgba(255, 255, 255, .98);
+                border-top: 1px solid var(--border);
+                bottom: 0;
+                display: flex;
+                height: 74px;
+                justify-content: space-around;
+                left: 0;
+                position: fixed;
+                right: 0;
+                z-index: 50;
+            }
+            .mobile-bottom-nav a { align-items: center; color: #667085; display: flex; flex-direction: column; font-size: 9px; gap: 4px; text-decoration: none; }
+            .mobile-bottom-nav a.active { color: var(--primary-strong); font-weight: 700; }
+            .mobile-bottom-nav .nav-icon { font-size: 19px; text-align: center; }
+            .fab {
+                align-items: center;
+                background: var(--primary-strong);
+                border-radius: 50%;
+                bottom: 88px;
+                box-shadow: 0 8px 24px rgba(7, 86, 216, .3);
+                color: #fff;
+                display: flex;
+                font-size: 32px;
+                height: 56px;
+                justify-content: center;
+                position: fixed;
+                right: 20px;
+                text-decoration: none;
+                width: 56px;
+                z-index: 45;
+            }
+
+            .modal-backdrop { align-items: flex-end; background: rgba(36, 43, 58, .28); padding: 0; }
+            .modal-card {
+                border-radius: 22px 22px 0 0;
+                max-height: calc(100vh - 20px);
+                width: 100%;
+            }
+            .modal-card::before { background: #c9ced8; border-radius: 999px; content: ""; display: block; height: 4px; margin: 6px auto 0; width: 30px; }
+            .modal-header { background: var(--surface); border: 0; padding: 21px 18px 10px; }
+            .modal-header h1 { font-size: 14px; font-weight: 500; }
+            .modal-header p { display: none; }
+            .loan-form-body { padding: 12px 18px 18px; }
+            .loan-form-grid { gap: 16px 12px; }
+            .loan-form-grid .mobile-full { grid-column: 1 / -1; }
+            .field label { font-size: 12px; font-weight: 500; }
+            .field input, .field select { background: var(--surface); height: 40px; }
+            .modal-footer { border: 0; display: block; padding: 0 18px 20px; }
+            .modal-footer .primary, .modal-footer button.danger { width: 100%; }
+            .modal-footer .cancel-link { display: none; }
+            .delete-copy { padding: 20px 18px 30px; }
+            .fab { display: flex; }
+            .profile-heading { margin-bottom: 22px; }
+            .profile-heading h1 { font-size: 24px; margin-bottom: 5px; }
+            .profile-heading p { font-size: 12px; max-width: 280px; }
+            .profile-layout { display: flex; flex-direction: column; gap: 14px; }
+            .profile-summary { align-items: center; display: flex; gap: 13px; order: -1; padding: 14px; text-align: left; width: 100%; }
+            .profile-avatar { border-width: 2px; flex: 0 0 auto; font-size: 16px; height: 52px; margin: 0; width: 52px; }
+            .profile-summary h2 { font-size: 15px; }
+            .profile-card { padding: 16px; width: 100%; }
+            .profile-form-grid { display: block; }
+            .profile-form-grid .field { margin-bottom: 15px; }
+            .profile-card .field input { height: 42px; }
+            .auth-form .phone-control input, .auth-form .phone-control select,
+            .profile-card .phone-control input, .profile-card .phone-control select { height: 42px; }
+            .profile-actions { border: 0; display: block; margin-top: 4px; padding-top: 0; }
+            .profile-actions .primary { width: 100%; }
+            .profile-actions .secondary-button { display: none; }
+            .auth-layout { display: block; min-height: calc(100vh - 1px); }
+            .auth-visual { display: none; }
+            .auth-panel { align-items: flex-start; min-height: 100vh; padding: 34px 18px 24px; }
+            .auth-form-wrap { max-width: 440px; }
+            .auth-mobile-brand { display: block; margin-bottom: 32px; }
+            .auth-form-wrap h1 { font-size: 24px; }
+            .auth-subtitle { font-size: 12px; margin-bottom: 24px; }
+            .auth-form-grid { gap: 14px 10px; }
+            .auth-form-grid .mobile-full { grid-column: 1 / -1; }
+            .auth-form { gap: 14px; }
+            .auth-form .field input { height: 42px; }
+            .auth-copyright { margin-top: 55px; }
+        }
+
+        @media (min-width: 901px) {
+            .mobile-search { display: none; }
         }
     </style>
 </head>
 <body>
-    <nav>
-        <a href="{% url 'users:home' %}"><strong>Borrowing App</strong></a>
-        {% if user.is_authenticated %}
-            <div class="nav-links">
-                <a href="{% url 'loans:list' %}">Préstamos</a>
-                <a href="{% url 'users:profile' %}">Mi perfil</a>
-                <form method="post" action="{% url 'users:logout' %}">
-                    {% csrf_token %}
-                    <button class="link-button" type="submit">Cerrar sesión</button>
-                </form>
+{% if user.is_authenticated %}
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="{% url 'loans:list' %}">
+                <strong>Borrowing</strong>
+                <span>Gestión de préstamos</span>
+            </a>
+            <nav class="side-nav" aria-label="Navegación principal">
+                <a class="nav-item" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="layout-dashboard" aria-hidden="true"></i>Panel</a>
+                <a class="nav-item {% if request.resolver_match.namespace == 'loans' %}active{% endif %}" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="hand-coins" aria-hidden="true"></i>Préstamos</a>
+                <a class="nav-item" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="banknote" aria-hidden="true"></i>Pagos</a>
+                <a class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'users:profile' %}"><i class="nav-icon" data-lucide="user-round" aria-hidden="true"></i>Perfil</a>
+                <a class="nav-item" href="{% url 'users:profile' %}"><i class="nav-icon" data-lucide="settings" aria-hidden="true"></i>Configuración</a>
+            </nav>
+            <form class="logout-form" method="post" action="{% url 'users:logout' %}">
+                {% csrf_token %}
+                <button class="nav-item logout-button" type="submit"><i class="nav-icon" data-lucide="log-out" aria-hidden="true"></i>Cerrar sesión</button>
+            </form>
+        </aside>
+
+        <header class="topbar">
+            <div class="global-search"><i data-lucide="search" aria-hidden="true"></i><span>Buscar...</span></div>
+            <div class="topbar-user">
+                <span class="notification" aria-label="Notificaciones"><i data-lucide="bell" aria-hidden="true"></i></span>
+                <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
+                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
             </div>
-        {% endif %}
-    </nav>
-    <main>
-        {% if messages %}
-            <ul class="messages">
-                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
-            </ul>
-        {% endif %}
-        <section class="card">{% block content %}{% endblock %}</section>
-    </main>
+        </header>
+
+        <header class="mobile-header">
+            <a class="mobile-brand" href="{% url 'loans:list' %}">Borrowing</a>
+            <div class="mobile-user"><span class="notification" aria-label="Notificaciones"><i data-lucide="bell" aria-hidden="true"></i></span><span class="avatar">{{ user.username|slice:":2"|upper }}</span></div>
+        </header>
+
+        <main class="page-main">
+            {% if messages %}
+                <ul class="flash-messages">
+                    {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+                </ul>
+            {% endif %}
+            <div class="content-wrap">{% block content %}{% endblock %}</div>
+        </main>
+
+        <nav class="mobile-bottom-nav" aria-label="Navegación móvil">
+            <a href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="layout-dashboard" aria-hidden="true"></i>Panel</a>
+            <a class="{% if request.resolver_match.namespace == 'loans' %}active{% endif %}" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="hand-coins" aria-hidden="true"></i>Préstamos</a>
+            <a href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="banknote" aria-hidden="true"></i>Pagos</a>
+            <a class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'users:profile' %}"><i class="nav-icon" data-lucide="user-round" aria-hidden="true"></i>Perfil</a>
+        </nav>
+    </div>
+{% else %}
+    <main class="auth-main">{% block auth_content %}{% endblock %}</main>
+{% endif %}
+<script>
+    document.addEventListener("click", function (event) {
+        const toggle = event.target.closest("[data-password-toggle]");
+        if (!toggle) return;
+
+        const field = document.getElementById(toggle.dataset.passwordToggle);
+        if (!field) return;
+
+        const willShow = field.type === "password";
+        field.type = willShow ? "text" : "password";
+        toggle.setAttribute("aria-pressed", String(willShow));
+        toggle.setAttribute(
+            "aria-label",
+            willShow ? "Ocultar contraseña" : "Mostrar contraseña"
+        );
+        const label = toggle.querySelector(".sr-only");
+        if (label) {
+            label.textContent = willShow ? "Ocultar contraseña" : "Mostrar contraseña";
+        }
+        const icon = toggle.querySelector(".password-icon");
+        if (icon) {
+            icon.setAttribute("data-lucide", willShow ? "eye-off" : "eye");
+            if (window.lucide) window.lucide.createIcons();
+        }
+    });
+
+    function validationResult(field) {
+        const value = field.value.trim();
+        const form = field.form;
+
+        if (field.required && !value) {
+            return { message: "Este campo es obligatorio.", type: "error" };
+        }
+        if (!value) {
+            return { message: "", type: "" };
+        }
+        if (field.type === "email" && field.validity.typeMismatch) {
+            return { message: "Ingresa un correo válido.", type: "error" };
+        }
+        if (field.validity.tooLong) {
+            return { message: `Usa máximo ${field.maxLength} caracteres.`, type: "error" };
+        }
+        if (field.name === "username" && !/^[\p{L}\p{N}@.+_-]+$/u.test(value)) {
+            return { message: "Usa solo letras, números o @/./+/-/_.", type: "error" };
+        }
+        if (field.dataset.numericPhone === "true" && field.validity.patternMismatch) {
+            return { message: "Ingresa solo números.", type: "error" };
+        }
+        if (field.name === "amount" && Number(value) <= 0) {
+            return { message: "El monto debe ser mayor que cero.", type: "error" };
+        }
+        if (field.name === "password1" && value.length < 8) {
+            return { message: "Usa al menos 8 caracteres.", type: "error" };
+        }
+        if (field.name === "password2") {
+            const original = form && form.elements.password1;
+            if (original && value !== original.value) {
+                return { message: "Las contraseñas no coinciden.", type: "error" };
+            }
+            if (original && value === original.value) {
+                return { message: "Las contraseñas coinciden.", type: "success" };
+            }
+        }
+        if (field.name === "due_date") {
+            const start = form && form.elements.loan_date;
+            if (start && start.value && value < start.value) {
+                return { message: "Debe ser igual o posterior a la fecha inicial.", type: "error" };
+            }
+        }
+        if (field.name === "date_to") {
+            const start = form && form.elements.date_from;
+            if (start && start.value && value < start.value) {
+                return { message: "Debe ser igual o posterior a la fecha inicial.", type: "error" };
+            }
+        }
+        return { message: "", type: "" };
+    }
+
+    function validateField(field, force) {
+        if (!field.matches("input, select") || field.type === "hidden") return true;
+
+        const container = field.closest(".field");
+        if (!container) return true;
+        const phoneNumber = container.querySelector(".phone-number");
+        if (phoneNumber) {
+            field = phoneNumber;
+        }
+        if (!force && field.dataset.touched !== "true") return true;
+        const feedback = container.querySelector(".live-feedback");
+        const result = validationResult(field);
+
+        container.classList.toggle("has-live-error", result.type === "error");
+        field.setAttribute("aria-invalid", String(result.type === "error"));
+        if (feedback) {
+            feedback.textContent = result.message;
+            feedback.className = `live-feedback ${result.type}`.trim();
+        }
+        return result.type !== "error";
+    }
+
+    document.querySelectorAll(".field").forEach(function (container, index) {
+        const controls = Array.from(
+            container.querySelectorAll("input:not([type='hidden']), select")
+        );
+        const field = container.querySelector(".phone-number") || controls[0];
+        const label = container.querySelector("label");
+        if (!field || !label) return;
+
+        const badge = document.createElement("span");
+        badge.className = `field-requirement ${field.required ? "required" : "optional"}`;
+        badge.textContent = field.required ? "Obligatorio" : "Opcional";
+        label.appendChild(badge);
+
+        const feedback = document.createElement("div");
+        feedback.className = "live-feedback";
+        feedback.id = `live-feedback-${index}`;
+        feedback.setAttribute("aria-live", "polite");
+        container.appendChild(feedback);
+
+        controls.forEach(function (control) {
+            control.setAttribute("aria-describedby", feedback.id);
+            control.addEventListener("blur", function () {
+                control.dataset.touched = "true";
+                validateField(control, false);
+            });
+            control.addEventListener("input", function () {
+                if (control.dataset.numericPhone === "true") {
+                    control.value = control.value.replace(/\D/g, "");
+                }
+                control.dataset.touched = "true";
+                validateField(control, false);
+                if (control.name === "password1" && control.form.elements.password2) {
+                    control.form.elements.password2.dataset.touched = "true";
+                    validateField(control.form.elements.password2, false);
+                }
+                if ((control.name === "loan_date" || control.name === "date_from") && control.form) {
+                    const paired = control.form.elements[control.name === "loan_date" ? "due_date" : "date_to"];
+                    if (paired && paired.value) {
+                        paired.dataset.touched = "true";
+                        validateField(paired, false);
+                    }
+                }
+            });
+            control.addEventListener("change", function () {
+                control.dataset.touched = "true";
+                validateField(control, false);
+            });
+        });
+    });
+
+    document.querySelectorAll("form[novalidate]").forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            let valid = true;
+            form.querySelectorAll(".field input:not([type='hidden']), .field select").forEach(function (field) {
+                field.dataset.touched = "true";
+                if (!validateField(field, true)) valid = false;
+            });
+            if (!valid) {
+                event.preventDefault();
+                const firstError = form.querySelector('[aria-invalid="true"]');
+                if (firstError) firstError.focus();
+            }
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.lucide) window.lucide.createIcons();
+    });
+</script>
 </body>
 </html>

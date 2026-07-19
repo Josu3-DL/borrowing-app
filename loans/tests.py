@@ -30,7 +30,8 @@ class LoanTestMixin:
     def loan_data(self, **overrides):
         data = {
             "borrower_name": "Mary Smith",
-            "borrower_phone": "8888-8888",
+            "borrower_phone_0": "+505",
+            "borrower_phone_1": "88888888",
             "borrower_email": "maria@example.com",
             "amount": "250.00",
             "loan_date": "2026-07-01",
@@ -45,7 +46,7 @@ class LoanTestMixin:
         return Loan.objects.create(
             owner=owner or self.user,
             borrower_name=data["borrower_name"],
-            borrower_phone=data["borrower_phone"],
+            borrower_phone=f"{data['borrower_phone_0']} {data['borrower_phone_1']}",
             borrower_email=data["borrower_email"],
             amount=Decimal(data["amount"]),
             loan_date=date.fromisoformat(data["loan_date"]),
@@ -82,6 +83,12 @@ class LoanModelAndFormTests(LoanTestMixin, TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("due_date", form.errors)
+
+    def test_form_rejects_non_numeric_phone(self):
+        form = LoanForm(data=self.loan_data(borrower_phone_1="8888ABCD"))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("borrower_phone", form.errors)
 
     def test_filter_form_rejects_reversed_date_range(self):
         form = LoanFilterForm(
@@ -287,3 +294,13 @@ class LoanViewTests(LoanTestMixin, TestCase):
         response = self.client.post(reverse("loans:list"))
 
         self.assertEqual(response.status_code, 405)
+
+    def test_navigation_is_in_spanish_and_excludes_reports(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:list"))
+
+        self.assertContains(response, "Gestión de préstamos")
+        self.assertContains(response, "Panel")
+        self.assertNotContains(response, "Dashboard")
+        self.assertNotContains(response, "Reportes")

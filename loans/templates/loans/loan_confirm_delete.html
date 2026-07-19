@@ -1,17 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Eliminar préstamo | Borrowing App{% endblock %}
+{% block title %}Eliminar préstamo | Borrowing{% endblock %}
 {% block content %}
-<h1>Eliminar préstamo</h1>
-<p>
-    ¿Seguro que deseas eliminar el préstamo de
-    <strong>{{ loan.borrower_name }}</strong> por <strong>{{ loan.amount }}</strong>?
-    Esta acción no se puede deshacer.
-</p>
-<form method="post">
-    {% csrf_token %}
-    <div class="form-actions">
-        <button class="danger" type="submit">Sí, eliminar</button>
-        <a href="{% url 'loans:list' %}">Cancelar</a>
-    </div>
-</form>
+{% include "loans/_loan_page.html" %}
+<div class="modal-backdrop">
+    <section class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="delete-title">
+        <header class="modal-header">
+            <div>
+                <h1 id="delete-title">Eliminar préstamo</h1>
+                <p>Esta acción no se puede deshacer.</p>
+            </div>
+            <a class="modal-close" href="{% url 'loans:list' %}" aria-label="Cerrar"><i data-lucide="x" aria-hidden="true"></i></a>
+        </header>
+        <div class="delete-copy">
+            ¿Seguro que deseas eliminar el préstamo de
+            <strong>{{ loan.borrower_name }}</strong> por <strong>${{ loan.amount }}</strong>?
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <footer class="modal-footer">
+                <a class="cancel-link" href="{% url 'loans:list' %}">Cancelar</a>
+                <button class="danger" type="submit">Eliminar préstamo</button>
+            </footer>
+        </form>
+    </section>
+</div>
 {% endblock %}

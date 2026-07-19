@@ -1,4 +1,4 @@
-# Borrowing App
+# Borrowing
 
 Aplicación web construida con Django para registrar y gestionar préstamos
 personales. Cada usuario administra el dinero que presta a personas externas a

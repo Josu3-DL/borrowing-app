@@ -1,14 +1,63 @@
 {% extends "base.html" %}
-{% block title %}{{ title }} | Borrowing App{% endblock %}
+{% block title %}{{ title }} | Borrowing{% endblock %}
 {% block content %}
-<h1>{{ title }}</h1>
-<p>El prestatario es la persona externa a quien entregaste el dinero.</p>
-<form method="post" novalidate>
-    {% csrf_token %}
-    {{ form.as_p }}
-    <div class="form-actions">
-        <button type="submit">Guardar</button>
-        <a href="{% url 'loans:list' %}">Cancelar</a>
-    </div>
-</form>
+{% include "loans/_loan_page.html" %}
+<div class="modal-backdrop">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="loan-form-title">
+        <header class="modal-header">
+            <div>
+                <h1 id="loan-form-title">{{ title }}</h1>
+                <p>Completa los detalles para registrar el préstamo.</p>
+            </div>
+            <a class="modal-close" href="{% url 'loans:list' %}" aria-label="Cerrar"><i data-lucide="x" aria-hidden="true"></i></a>
+        </header>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="loan-form-body">
+                {% if form.non_field_errors %}<div class="field-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="loan-form-grid">
+                    <div class="field full">
+                        {{ form.borrower_name.label_tag }}
+                        {{ form.borrower_name }}
+                        {{ form.borrower_name.errors }}
+                    </div>
+                    <div class="field mobile-full">
+                        {{ form.borrower_phone.label_tag }}
+                        {{ form.borrower_phone }}
+                        {{ form.borrower_phone.errors }}
+                    </div>
+                    <div class="field mobile-full">
+                        {{ form.borrower_email.label_tag }}
+                        {{ form.borrower_email }}
+                        {{ form.borrower_email.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.amount.label_tag }}
+                        {{ form.amount }}
+                        {{ form.amount.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.status.label_tag }}
+                        {{ form.status }}
+                        {{ form.status.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.loan_date.label_tag }}
+                        {{ form.loan_date }}
+                        {{ form.loan_date.errors }}
+                    </div>
+                    <div class="field">
+                        {{ form.due_date.label_tag }}
+                        {{ form.due_date }}
+                        {{ form.due_date.errors }}
+                    </div>
+                </div>
+            </div>
+            <footer class="modal-footer">
+                <a class="cancel-link" href="{% url 'loans:list' %}">Cancelar</a>
+                <button class="primary" type="submit"><i data-lucide="save" aria-hidden="true"></i> Guardar préstamo</button>
+            </footer>
+        </form>
+    </section>
+</div>
 {% endblock %}

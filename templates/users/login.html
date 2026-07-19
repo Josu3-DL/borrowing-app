@@ -1,12 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Iniciar sesión | Borrowing App{% endblock %}
-{% block content %}
-<h1>Iniciar sesión</h1>
-<form method="post" novalidate>
-    {% csrf_token %}
-    {{ form.as_p }}
-    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-    <button type="submit">Entrar</button>
-</form>
-<p>¿Aún no tienes cuenta? <a href="{% url 'users:register' %}">Regístrate</a>.</p>
+{% block title %}Iniciar sesión | Borrowing{% endblock %}
+{% block auth_content %}
+<div class="auth-layout">
+    <aside class="auth-visual" aria-hidden="true">
+        <div class="auth-brand"><span class="auth-brand-mark"><i data-lucide="landmark" aria-hidden="true"></i></span>Borrowing</div>
+        <div class="auth-pitch">
+            <h2>Gestiona tus préstamos con precisión.</h2>
+            <p>Organiza el dinero que prestas, mantén tus vencimientos visibles y toma decisiones con información clara.</p>
+            <div class="portfolio-card">
+                <span>Control de préstamos</span>
+                <strong>Todo en un solo lugar</strong>
+                <div class="portfolio-progress"><i></i></div>
+            </div>
+        </div>
+        <div class="auth-proof">
+            <div class="proof-avatars"><span>MA</span><span>SO</span><span>RC</span></div>
+            <strong>Control simple, información clara.</strong>
+        </div>
+    </aside>
+
+    <section class="auth-panel">
+        <div class="auth-form-wrap">
+            <div class="auth-mobile-brand" aria-hidden="true">
+                <span class="auth-brand-mark"><i data-lucide="landmark" aria-hidden="true"></i></span>
+                <strong>Borrowing</strong>
+            </div>
+            <h1>Bienvenido de nuevo</h1>
+            <p class="auth-subtitle">Ingresa tus datos para administrar tus préstamos.</p>
+
+            <form class="auth-form" method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="field-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="field">
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                    {{ form.username.errors }}
+                </div>
+                <div class="field">
+                    {{ form.password.label_tag }}
+                    <div class="password-control">
+                        {{ form.password }}
+                        <button class="password-toggle" type="button" data-password-toggle="{{ form.password.id_for_label }}" aria-label="Mostrar contraseña" aria-pressed="false">
+                            <i class="password-icon" data-lucide="eye" aria-hidden="true"></i>
+                            <span class="sr-only">Mostrar contraseña</span>
+                        </button>
+                    </div>
+                    {{ form.password.errors }}
+                </div>
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                <button class="primary auth-submit" type="submit">Iniciar sesión <i data-lucide="log-in" aria-hidden="true"></i></button>
+            </form>
+
+            <p class="auth-switch">¿Aún no tienes una cuenta? <a href="{% url 'users:register' %}">Crear cuenta</a></p>
+            <p class="auth-copyright">© 2026 Borrowing · Gestión de préstamos. Todos los derechos reservados.</p>
+        </div>
+    </section>
+</div>
 {% endblock %}

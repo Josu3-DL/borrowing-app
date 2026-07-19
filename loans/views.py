@@ -7,13 +7,14 @@ from .forms import LoanFilterForm, LoanForm
 from .models import Loan
 
 
-@login_required
-@require_http_methods(["GET"])
-def loan_list(request):
+def _loan_page_context(request, apply_filters=False):
     loans = Loan.objects.filter(owner=request.user)
-    filter_form = LoanFilterForm(request.GET)
+    filter_form = LoanFilterForm(
+        request.GET if apply_filters else None,
+        auto_id="filter_%s",
+    )
 
-    if filter_form.is_valid():
+    if apply_filters and filter_form.is_valid():
         status = filter_form.cleaned_data["status"]
         borrower_name = filter_form.cleaned_data["borrower_name"]
         date_from = filter_form.cleaned_data["date_from"]
@@ -28,10 +29,13 @@ def loan_list(request):
         if date_to:
             loans = loans.filter(loan_date__lte=date_to)
 
-    context = {
-        "loans": loans,
-        "filter_form": filter_form,
-    }
+    return {"loans": loans, "filter_form": filter_form}
+
+
+@login_required
+@require_http_methods(["GET"])
+def loan_list(request):
+    context = _loan_page_context(request, apply_filters=True)
     return render(request, "loans/loan_list.html", context)
 
 
@@ -46,11 +50,9 @@ def loan_create(request):
         messages.success(request, "Préstamo creado correctamente.")
         return redirect("loans:list")
 
-    return render(
-        request,
-        "loans/loan_form.html",
-        {"form": form, "title": "Nuevo préstamo"},
-    )
+    context = _loan_page_context(request)
+    context.update({"form": form, "title": "Nuevo préstamo"})
+    return render(request, "loans/loan_form.html", context)
 
 
 @login_required
@@ -63,11 +65,9 @@ def loan_update(request, pk):
         messages.success(request, "Préstamo actualizado correctamente.")
         return redirect("loans:list")
 
-    return render(
-        request,
-        "loans/loan_form.html",
-        {"form": form, "title": "Editar préstamo"},
-    )
+    context = _loan_page_context(request)
+    context.update({"form": form, "title": "Editar préstamo"})
+    return render(request, "loans/loan_form.html", context)
 
 
 @login_required
@@ -79,4 +79,6 @@ def loan_delete(request, pk):
         messages.success(request, "Préstamo eliminado correctamente.")
         return redirect("loans:list")
 
-    return render(request, "loans/loan_confirm_delete.html", {"loan": loan})
+    context = _loan_page_context(request)
+    context["loan"] = loan
+    return render(request, "loans/loan_confirm_delete.html", context)
