@@ -173,6 +173,13 @@
         amountSymbol.textContent = symbol(currencySelect.value);
     }
 
+    function syncCurrencyToLoan() {
+        const loan = loanData[loanSelect.value];
+        if (loan) {
+            currencySelect.value = loan.currency;
+        }
+    }
+
     function updatePaymentPreview() {
         const loan = loanData[loanSelect.value];
         const paymentCurrency = currencySelect.value;
@@ -226,9 +233,13 @@
         }
     }
 
-    loanSelect.addEventListener("change", updatePaymentPreview);
+    loanSelect.addEventListener("change", function () {
+        syncCurrencyToLoan();
+        updatePaymentPreview();
+    });
     currencySelect.addEventListener("change", updatePaymentPreview);
     amountInput.addEventListener("input", updatePaymentPreview);
+    syncCurrencyToLoan();
     updatePaymentPreview();
 })();
 </script>
