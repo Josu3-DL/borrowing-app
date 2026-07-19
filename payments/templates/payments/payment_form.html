@@ -40,7 +40,7 @@
                     <div class="payment-form-field">
                         {{ form.amount.label_tag }}
                         <div class="payment-amount-control">
-                            <span>$</span>{{ form.amount }}
+                            <span id="amount-currency-symbol">$</span>{{ form.amount }}
                         </div>
                         {{ form.amount.errors }}
                     </div>
@@ -155,6 +155,7 @@
     const overflowAlert = document.getElementById("alert-overflow");
     const overflowMessage = document.getElementById("alert-overflow-msg");
     const submitButton = document.getElementById("submit-btn");
+    const amountSymbol = document.getElementById("amount-currency-symbol");
 
     function symbol(currency) {
         return currency === "USD" ? "$" : "C$";
@@ -168,11 +169,16 @@
         element.hidden = hidden;
     }
 
+    function updateAmountSymbol() {
+        amountSymbol.textContent = symbol(currencySelect.value);
+    }
+
     function updatePaymentPreview() {
         const loan = loanData[loanSelect.value];
         const paymentCurrency = currencySelect.value;
         const amount = Number(amountInput.value) || 0;
 
+        updateAmountSymbol();
         setHidden(paidAlert, true);
         setHidden(overflowAlert, true);
         submitButton.disabled = false;
