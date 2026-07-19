@@ -36,7 +36,7 @@ class AuthenticationTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse("users:profile"))
+        self.assertRedirects(response, reverse("loans:dashboard"))
         self.assertTrue(User.objects.filter(username="luis").exists())
         self.assertEqual(
             str(self.client.session["_auth_user_id"]),
@@ -83,7 +83,14 @@ class AuthenticationTests(TestCase):
             {"username": self.user.username, "password": self.password},
         )
 
-        self.assertRedirects(response, reverse("users:profile"))
+        self.assertRedirects(response, reverse("loans:dashboard"))
+
+    def test_authenticated_home_redirects_to_dashboard(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("users:home"))
+
+        self.assertRedirects(response, reverse("loans:dashboard"))
 
     def test_email_cannot_be_used_to_log_in(self):
         response = self.client.post(

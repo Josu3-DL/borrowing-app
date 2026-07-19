@@ -8,21 +8,21 @@ from .forms import ProfileForm, RegistrationForm
 
 
 def home(request):
-    destination = "users:profile" if request.user.is_authenticated else "users:login"
+    destination = "loans:dashboard" if request.user.is_authenticated else "users:login"
     return redirect(destination)
 
 
 @require_http_methods(["GET", "POST"])
 def register(request):
     if request.user.is_authenticated:
-        return redirect("users:profile")
+        return redirect("loans:dashboard")
 
     form = RegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user)
         messages.success(request, "Tu cuenta fue creada correctamente.")
-        return redirect("users:profile")
+        return redirect("loans:dashboard")
 
     return render(request, "users/register.html", {"form": form})
 

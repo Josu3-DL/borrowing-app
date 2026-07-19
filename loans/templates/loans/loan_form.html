@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} | Borrowing{% endblock %}
+{% block body_class %}loans-page{% endblock %}
 {% block content %}
 {% include "loans/_loan_page.html" %}
 <div class="modal-backdrop">
@@ -37,9 +38,9 @@
                         {{ form.amount.errors }}
                     </div>
                     <div class="field">
-                        {{ form.status.label_tag }}
-                        {{ form.status }}
-                        {{ form.status.errors }}
+                        {{ form.currency.label_tag }}
+                        {{ form.currency }}
+                        {{ form.currency.errors }}
                     </div>
                     <div class="field">
                         {{ form.loan_date.label_tag }}
@@ -50,6 +51,11 @@
                         {{ form.due_date.label_tag }}
                         {{ form.due_date }}
                         {{ form.due_date.errors }}
+                    </div>
+                    <div class="field full">
+                        {{ form.status.label_tag }}
+                        {{ form.status }}
+                        {{ form.status.errors }}
                     </div>
                 </div>
             </div>

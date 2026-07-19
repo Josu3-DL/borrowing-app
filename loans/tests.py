@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from payments.models import Payment
+
 from .forms import LoanFilterForm, LoanForm
 from .models import Loan
 
@@ -34,6 +36,7 @@ class LoanTestMixin:
             "borrower_phone_1": "88888888",
             "borrower_email": "maria@example.com",
             "amount": "250.00",
+            "currency": Loan.Currency.NIO,
             "loan_date": "2026-07-01",
             "due_date": "2026-08-01",
             "status": Loan.Status.PENDING,
@@ -49,6 +52,7 @@ class LoanTestMixin:
             borrower_phone=f"{data['borrower_phone_0']} {data['borrower_phone_1']}",
             borrower_email=data["borrower_email"],
             amount=Decimal(data["amount"]),
+            currency=data.get("currency", Loan.Currency.NIO),
             loan_date=date.fromisoformat(data["loan_date"]),
             due_date=date.fromisoformat(data["due_date"]),
             status=data["status"],
@@ -104,6 +108,7 @@ class LoanViewTests(LoanTestMixin, TestCase):
         loan = self.create_loan()
         protected_urls = [
             reverse("loans:list"),
+            reverse("loans:dashboard"),
             reverse("loans:create"),
             reverse("loans:update", args=[loan.pk]),
             reverse("loans:delete", args=[loan.pk]),
@@ -116,6 +121,62 @@ class LoanViewTests(LoanTestMixin, TestCase):
                     response,
                     f"{reverse('users:login')}?next={url}",
                 )
+
+    def test_dashboard_uses_only_current_users_financial_data(self):
+        own_loan = self.create_loan(
+            borrower_name="Visible dashboard borrower",
+            amount="100.00",
+            currency=Loan.Currency.USD,
+            loan_date="2026-07-01",
+            due_date="2026-08-01",
+        )
+        Payment.objects.create(
+            loan=own_loan,
+            amount=Decimal("25.00"),
+            currency=Loan.Currency.USD,
+            payment_date=date(2026, 7, 15),
+        )
+        other_loan = self.create_loan(
+            owner=self.other_user,
+            borrower_name="Hidden dashboard borrower",
+            amount="900.00",
+            currency=Loan.Currency.USD,
+        )
+        Payment.objects.create(
+            loan=other_loan,
+            amount=Decimal("500.00"),
+            currency=Loan.Currency.USD,
+            payment_date=date(2026, 7, 15),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_lent"], "$100.00")
+        self.assertEqual(response.context["total_recovered"], "$25.00")
+        self.assertEqual(response.context["total_pending"], "$75.00")
+        self.assertEqual(response.context["active_count"], 1)
+        self.assertContains(response, "Visible dashboard borrower")
+        self.assertNotContains(response, "Hidden dashboard borrower")
+
+    def test_dashboard_renders_responsive_sections_and_real_empty_states(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        self.assertContains(response, "Panel de Control")
+        self.assertContains(response, 'class="dashboard-desktop"')
+        self.assertContains(response, 'class="dashboard-mobile"')
+        self.assertContains(response, "Aún no hay préstamos registrados")
+        self.assertContains(response, "No hay pagos pendientes")
+
+    def test_dashboard_only_accepts_get(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("loans:dashboard"))
+
+        self.assertEqual(response.status_code, 405)
 
     def test_user_can_create_loan_for_external_borrower(self):
         self.client.force_login(self.user)

@@ -1,74 +1,385 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | Borrowing App{% endblock %}
+{% block title %}Panel de control | Borrowing{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
 {% block content %}
-<div class="page-heading">
-    <div>
-        <h1>Dashboard</h1>
-        <p>Resumen general &mdash; Tipo de cambio: <strong>C$37 por $1 USD</strong></p>
-    </div>
-    <a class="button" href="{% url 'loans:create' %}">Nuevo prestamo</a>
-</div>
+<section class="dashboard-desktop" aria-labelledby="dashboard-title">
+    <header class="dashboard-heading">
+        <div>
+            <h1 id="dashboard-title">Panel de Control</h1>
+            <p>Bienvenido de nuevo. Aquí tienes un resumen de tu cartera actual.</p>
+        </div>
+        <div class="dashboard-actions">
+            <a class="dashboard-primary-button" href="{% url 'loans:create' %}">
+                <i data-lucide="plus" aria-hidden="true"></i> Nuevo préstamo
+            </a>
+        </div>
+    </header>
 
-<h2 class="section-title">Dolares (USD)</h2>
-<div class="stats-grid">
-    <div class="stat-card stat-card--usd">
-        <span class="stat-label">Total prestado</span>
-        <span class="stat-value">${{ usd.total_lent }}</span>
+    <div class="dashboard-metrics">
+        <article class="metric-card">
+            <div class="metric-top">
+                <span class="metric-icon blue"><i data-lucide="banknote" aria-hidden="true"></i></span>
+                <span class="metric-change {% if lent_change < 0 %}negative{% else %}positive{% endif %}">{% if lent_change > 0 %}+{% endif %}{{ lent_change }}%</span>
+            </div>
+            <span class="metric-label">Total prestado</span>
+            <strong>{{ total_lent }}</strong>
+        </article>
+        <article class="metric-card">
+            <div class="metric-top">
+                <span class="metric-icon green"><i data-lucide="circle-check" aria-hidden="true"></i></span>
+                <span class="metric-change {% if recovered_change < 0 %}negative{% else %}positive{% endif %}">{% if recovered_change > 0 %}+{% endif %}{{ recovered_change }}%</span>
+            </div>
+            <span class="metric-label">Total recuperado</span>
+            <strong>{{ total_recovered }}</strong>
+        </article>
+        <article class="metric-card">
+            <div class="metric-top">
+                <span class="metric-icon amber"><i data-lucide="clipboard-clock" aria-hidden="true"></i></span>
+                <span class="metric-change neutral">{{ pending_change }}%</span>
+            </div>
+            <span class="metric-label">Pendiente</span>
+            <strong>{{ total_pending }}</strong>
+        </article>
+        <article class="metric-card">
+            <div class="metric-top">
+                <span class="metric-icon indigo"><i data-lucide="activity" aria-hidden="true"></i></span>
+            </div>
+            <span class="metric-label">Activos</span>
+            <strong>{{ active_count }}</strong>
+        </article>
+        <article class="metric-card">
+            <div class="metric-top">
+                <span class="metric-icon slate"><i data-lucide="history" aria-hidden="true"></i></span>
+            </div>
+            <span class="metric-label">Finalizados</span>
+            <strong>{{ completed_count }}</strong>
+        </article>
+        <article class="metric-card metric-card-primary">
+            <div class="metric-top">
+                <span class="metric-icon glass"><i data-lucide="calendar-days" aria-hidden="true"></i></span>
+            </div>
+            <span class="metric-label">Pagos del mes</span>
+            <strong>{{ payments_this_month }}</strong>
+        </article>
     </div>
-    <div class="stat-card stat-card--recovered">
-        <span class="stat-label">Recuperado</span>
-        <span class="stat-value">${{ usd.total_recovered }}</span>
-    </div>
-    <div class="stat-card stat-card--pending">
-        <span class="stat-label">Pendiente</span>
-        <span class="stat-value">${{ usd.total_pending }}</span>
-    </div>
-    <div class="stat-card stat-card--active">
-        <span class="stat-label">Activos</span>
-        <span class="stat-value">{{ usd.active }}</span>
-    </div>
-</div>
 
-<h2 class="section-title" style="margin-top:2rem;">Cordobas (NIO)</h2>
-<div class="stats-grid">
-    <div class="stat-card stat-card--nio">
-        <span class="stat-label">Total prestado</span>
-        <span class="stat-value">C${{ nio.total_lent }}</span>
-    </div>
-    <div class="stat-card stat-card--recovered">
-        <span class="stat-label">Recuperado</span>
-        <span class="stat-value">C${{ nio.total_recovered }}</span>
-    </div>
-    <div class="stat-card stat-card--pending">
-        <span class="stat-label">Pendiente</span>
-        <span class="stat-value">C${{ nio.total_pending }}</span>
-    </div>
-    <div class="stat-card stat-card--active">
-        <span class="stat-label">Activos</span>
-        <span class="stat-value">{{ nio.active }}</span>
-    </div>
-</div>
+    <div class="dashboard-chart-grid">
+        <article class="dashboard-panel chart-panel">
+            <header class="panel-heading">
+                <h2>Préstamos por mes</h2>
+                <span>Últimos 6 meses <i data-lucide="chevron-down" aria-hidden="true"></i></span>
+            </header>
+            <div class="desktop-bar-chart" aria-label="Préstamos emitidos durante los últimos seis meses">
+                {% for month in month_series %}
+                    <div class="desktop-bar-column">
+                        <span class="desktop-bar" style="height: {{ month.lent_height }}%"></span>
+                        <small>{{ month.label }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
 
-<div style="margin-top:2rem; text-align:right;">
-    <strong>{{ total_active }}</strong> prestamo(s) activo(s) en total &nbsp;&mdash;&nbsp;
-    <a href="{% url 'loans:list' %}">Ver todos los prestamos &rarr;</a>
-</div>
+        <article class="dashboard-panel chart-panel">
+            <header class="panel-heading">
+                <h2>Dinero recuperado por mes</h2>
+                <span class="chart-legend"><i></i> Ingresos</span>
+            </header>
+            <div class="desktop-line-chart">
+                <svg viewBox="0 0 580 220" role="img" aria-label="Dinero recuperado durante los últimos seis meses">
+                    <defs>
+                        <linearGradient id="recovery-area" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#0756d8" stop-opacity=".16"/>
+                            <stop offset="100%" stop-color="#0756d8" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <line x1="0" x2="580" y1="210" y2="210" stroke="#e7eaf2"/>
+                    <polygon points="{{ recovery_area_points }}" fill="url(#recovery-area)"/>
+                    <polyline points="{{ recovery_points }}" fill="none" stroke="#0756d8" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+                </svg>
+                <div class="line-chart-labels">
+                    {% for month in month_series %}<small>{{ month.label }}</small>{% endfor %}
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <div class="dashboard-list-grid">
+        <article class="dashboard-panel">
+            <header class="panel-heading panel-heading-bordered">
+                <h2>Últimos préstamos registrados</h2>
+                <a href="{% url 'loans:list' %}">Ver todos</a>
+            </header>
+            <div class="dashboard-table-wrap">
+                <table class="dashboard-table">
+                    <thead>
+                        <tr><th>Cliente</th><th>Monto</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in recent_loans %}
+                            <tr>
+                                <td><strong>{{ loan.borrower_name }}</strong><small>{{ loan.loan_date|date:"d M Y" }}</small></td>
+                                <td>{{ loan.currency_symbol }}{{ loan.amount|floatformat:2 }}</td>
+                                <td><span class="dashboard-status {{ loan.status }}">{{ loan.get_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td class="dashboard-empty" colspan="3">Aún no hay préstamos registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="dashboard-panel">
+            <header class="panel-heading panel-heading-bordered">
+                <h2>Próximos pagos pendientes</h2>
+                <a href="{% url 'loans:list' %}">Ver calendario</a>
+            </header>
+            <div class="upcoming-list desktop-upcoming-list">
+                {% for item in upcoming_loans %}
+                    <a href="{% url 'loans:update' item.loan.pk %}" class="upcoming-item">
+                        <span class="date-tile"><small>{{ item.month }}</small><strong>{{ item.day }}</strong></span>
+                        <span class="upcoming-person"><strong>{{ item.loan.borrower_name }}</strong><small>{{ item.due_label }}</small></span>
+                        <span class="upcoming-amount"><strong>{{ item.amount }}</strong><small class="{{ item.due_state }}">Pendiente</small></span>
+                    </a>
+                {% empty %}
+                    <p class="dashboard-empty">No hay pagos pendientes.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+</section>
+
+<section class="dashboard-mobile" aria-labelledby="mobile-dashboard-title">
+    <header class="mobile-dashboard-heading">
+        <h1 id="mobile-dashboard-title">Hola, {{ user.first_name|default:user.username }}</h1>
+        <p>Aquí tienes el resumen de tus préstamos hoy.</p>
+    </header>
+
+    <article class="mobile-total-card">
+        <div>
+            <span>Total prestado</span>
+            <strong>{{ total_lent }}</strong>
+            <small><i data-lucide="trending-up" aria-hidden="true"></i> {{ lent_change }}% este mes</small>
+        </div>
+        <i class="mobile-total-art" data-lucide="banknote" aria-hidden="true"></i>
+    </article>
+
+    <div class="mobile-summary-grid">
+        <article class="mobile-summary-card recovered">
+            <span><i data-lucide="circle-check" aria-hidden="true"></i> Recuperado</span>
+            <strong>{{ total_recovered }}</strong>
+            <i class="summary-progress"></i>
+        </article>
+        <article class="mobile-summary-card pending">
+            <span><i data-lucide="clipboard-clock" aria-hidden="true"></i> Pendiente</span>
+            <strong>{{ total_pending }}</strong>
+            <i class="summary-progress"></i>
+        </article>
+    </div>
+
+    <article class="mobile-dashboard-section mobile-performance">
+        <header>
+            <h2>Rendimiento</h2>
+            <a href="#activity">Ver detalles</a>
+        </header>
+        <div class="mobile-bars">
+            {% for month in month_series %}
+                <div>
+                    <span class="mobile-bar-track"><i style="height: {{ month.lent_height }}%"></i></span>
+                    <small>{{ month.label }}</small>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="mobile-chart-legend"><i></i>Nuevos préstamos <i></i>Promedio</div>
+    </article>
+
+    <article class="mobile-dashboard-section">
+        <header>
+            <h2>Próximos pagos</h2>
+            {% if upcoming_loans %}<span class="overdue-count">{{ upcoming_loans|length }} pendientes</span>{% endif %}
+        </header>
+        <div class="upcoming-list">
+            {% for item in upcoming_loans|slice:":3" %}
+                <a href="{% url 'loans:update' item.loan.pk %}" class="upcoming-item">
+                    <span class="borrower-avatar"><i data-lucide="user-round" aria-hidden="true"></i></span>
+                    <span class="upcoming-person"><strong>{{ item.loan.borrower_name }}</strong><small>{{ item.due_label }}</small></span>
+                    <span class="upcoming-amount"><strong>{{ item.amount }}</strong><small class="{{ item.due_state }}">Pendiente</small></span>
+                </a>
+            {% empty %}
+                <p class="dashboard-empty">No hay pagos pendientes.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="mobile-dashboard-section" id="activity">
+        <header><h2>Actividad reciente</h2></header>
+        <div class="activity-list">
+            {% for item in recent_activity %}
+                <div class="activity-item">
+                    <span class="activity-icon {{ item.kind }}"><i data-lucide="{{ item.icon }}" aria-hidden="true"></i></span>
+                    <span><strong>{{ item.title }}</strong><small>{{ item.detail }}</small></span>
+                    <time>{{ item.created_at|timesince }}</time>
+                </div>
+            {% empty %}
+                <p class="dashboard-empty">Tu actividad reciente aparecerá aquí.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <a class="dashboard-fab" href="{% url 'loans:create' %}" aria-label="Crear préstamo">
+        <i data-lucide="plus" aria-hidden="true"></i>
+    </a>
+</section>
 
 <style>
-    .section-title { font-size: 1rem; font-weight: 700; color: #667085;
-                     letter-spacing: .06em; text-transform: uppercase; margin-bottom: .75rem; }
-    .stats-grid { display: grid; gap: 1.25rem;
-                  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
-    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0;
-                 border-left: 4px solid #175cd3; border-radius: .6rem;
-                 display: flex; flex-direction: column; gap: .4rem; padding: 1.4rem 1.6rem; }
-    .stat-card--usd      { border-left-color: #175cd3; }
-    .stat-card--nio      { border-left-color: #6941c6; }
-    .stat-card--recovered{ border-left-color: #067647; }
-    .stat-card--pending  { border-left-color: #b54708; }
-    .stat-card--active   { border-left-color: #667085; }
-    .stat-label { color: #667085; font-size: .8rem; font-weight: 600;
-                  text-transform: uppercase; letter-spacing: .04em; }
-    .stat-value { color: #182230; font-size: 1.9rem; font-weight: 700; }
+    .dashboard-mobile { display: none; }
+    .dashboard-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 24px; }
+    .dashboard-heading h1 { font-size: 29px; letter-spacing: -.04em; margin: 0 0 3px; }
+    .dashboard-heading p { color: #667085; font-size: 14px; margin: 0; }
+    .dashboard-actions { display: flex; gap: 12px; }
+    .dashboard-actions a { align-items: center; border-radius: 8px; display: inline-flex; font-size: 13px; font-weight: 700; gap: 8px; min-height: 42px; padding: 0 17px; text-decoration: none; }
+    .dashboard-primary-button { background: #0756d8; border: 1px solid #0756d8; color: #fff; }
+    .dashboard-actions .lucide { height: 15px; width: 15px; }
+
+    .dashboard-metrics { display: grid; gap: 14px; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 22px; }
+    .metric-card { background: #fff; border: 1px solid #cfd5e3; border-radius: 11px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); min-height: 126px; padding: 16px; }
+    .metric-top { align-items: flex-start; display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .metric-icon { align-items: center; border-radius: 7px; display: inline-flex; height: 34px; justify-content: center; width: 34px; }
+    .metric-icon .lucide { height: 18px; width: 18px; }
+    .metric-icon.blue, .metric-icon.indigo { background: #e5edff; color: #0756d8; }
+    .metric-icon.green { background: #ddfae7; color: #079455; }
+    .metric-icon.amber { background: #fff0cb; color: #d16b00; }
+    .metric-icon.slate { background: #eff1f5; color: #344054; }
+    .metric-icon.glass { background: rgba(255,255,255,.18); color: #fff; }
+    .metric-change { font-size: 11px; font-weight: 700; padding-top: 5px; }
+    .metric-change.positive { color: #079455; }
+    .metric-change.negative { color: #d92d20; }
+    .metric-change.neutral { color: #d16b00; }
+    .metric-label { color: #475467; display: block; font-size: 10px; letter-spacing: .02em; margin-bottom: 4px; text-transform: uppercase; }
+    .metric-card strong { font-size: 19px; letter-spacing: -.025em; }
+    .metric-card-primary { background: #0756d8; border-color: #0756d8; color: #fff; }
+    .metric-card-primary .metric-label { color: #d9e5ff; }
+
+    .dashboard-chart-grid, .dashboard-list-grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
+    .dashboard-panel { background: #fff; border: 1px solid #cfd5e3; border-radius: 11px; overflow: hidden; }
+    .chart-panel { min-height: 278px; padding: 0 19px 15px; }
+    .panel-heading { align-items: center; display: flex; justify-content: space-between; min-height: 59px; }
+    .panel-heading h2 { font-size: 17px; letter-spacing: -.02em; margin: 0; }
+    .panel-heading > span { align-items: center; color: #667085; display: inline-flex; font-size: 10px; gap: 6px; }
+    .panel-heading > span .lucide { height: 12px; width: 12px; }
+    .panel-heading a { color: #0756d8; font-size: 11px; font-weight: 600; text-decoration: none; }
+    .panel-heading-bordered { border-bottom: 1px solid #d9deea; padding: 0 19px; }
+    .chart-legend i { background: #0756d8; border-radius: 50%; display: inline-block; height: 7px; width: 7px; }
+    .desktop-bar-chart { align-items: end; border-bottom: 1px solid #e8ebf2; display: flex; gap: 18px; height: 192px; justify-content: space-around; padding: 12px 15px 0; }
+    .desktop-bar-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; }
+    .desktop-bar { background: linear-gradient(#7ca7ff, #0756d8); border-radius: 6px 6px 0 0; display: block; max-width: 34px; min-height: 8px; width: 55%; }
+    .desktop-bar-column small { color: #667085; font-size: 9px; margin: 8px 0 5px; }
+    .desktop-line-chart { height: 200px; position: relative; }
+    .desktop-line-chart svg { height: 172px; overflow: visible; width: 100%; }
+    .line-chart-labels { display: flex; justify-content: space-between; }
+    .line-chart-labels small { color: #667085; font-size: 9px; }
+
+    .dashboard-table { border-collapse: collapse; width: 100%; }
+    .dashboard-table th { background: #f3f5fb; color: #475467; font-size: 10px; font-weight: 600; letter-spacing: .04em; padding: 11px 19px; text-align: left; text-transform: uppercase; }
+    .dashboard-table td { border-top: 1px solid #eef0f5; font-size: 12px; padding: 12px 19px; }
+    .dashboard-table td strong, .dashboard-table td small { display: block; }
+    .dashboard-table td small { color: #667085; font-size: 10px; margin-top: 2px; }
+    .dashboard-status { border-radius: 999px; display: inline-block; font-size: 9px; font-weight: 700; padding: 4px 7px; }
+    .dashboard-status.pending { background: #fff0d5; color: #b54708; }
+    .dashboard-status.paid { background: #dcfae6; color: #087a55; }
+    .dashboard-empty { color: #667085; font-size: 12px; margin: 0; padding: 24px; text-align: center; }
+    .upcoming-list { display: grid; }
+    .upcoming-item { align-items: center; border-bottom: 1px solid #eef0f5; display: grid; gap: 12px; grid-template-columns: auto 1fr auto; min-height: 64px; padding: 9px 18px; text-decoration: none; }
+    .upcoming-item:last-child { border-bottom: 0; }
+    .upcoming-item:hover { background: #f8faff; }
+    .date-tile { align-items: center; background: #eff3ff; border: 1px solid #d8e0f4; border-radius: 7px; display: flex; flex-direction: column; height: 43px; justify-content: center; width: 43px; }
+    .date-tile small { color: #475467; font-size: 8px; font-weight: 700; }
+    .date-tile strong { color: #0756d8; font-size: 14px; }
+    .upcoming-person strong, .upcoming-person small, .upcoming-amount strong, .upcoming-amount small { display: block; }
+    .upcoming-person strong { font-size: 12px; }
+    .upcoming-person small { color: #667085; font-size: 9px; margin-top: 3px; }
+    .upcoming-amount { text-align: right; }
+    .upcoming-amount strong { color: #0756d8; font-size: 12px; }
+    .upcoming-amount small { font-size: 8px; font-weight: 700; margin-top: 3px; text-transform: uppercase; }
+    .upcoming-amount small.overdue { color: #d92d20; }
+    .upcoming-amount small.today, .upcoming-amount small.soon { color: #b54708; }
+    .upcoming-amount small.upcoming { color: #0756d8; }
+
+    @media (min-width: 901px) {
+        body.dashboard-page .sidebar { padding: 25px 11px 22px; width: 212px; }
+        body.dashboard-page .brand { margin: 0 15px 30px; }
+        body.dashboard-page .brand strong { font-size: 18px; }
+        body.dashboard-page .brand span { font-size: 10px; }
+        body.dashboard-page .nav-item { font-size: 12px; min-height: 40px; padding: 0 15px; }
+        body.dashboard-page .topbar { height: 61px; left: 212px; padding: 0 17px 0 20px; }
+        body.dashboard-page .page-main { margin-left: 212px; padding: 82px 24px 34px; }
+        body.dashboard-page .content-wrap { max-width: none; }
+    }
+
+    @media (max-width: 900px) {
+        body.dashboard-page { background: #f7f8fc; padding-bottom: 72px; }
+        body.dashboard-page .mobile-header { height: 60px; padding: 0 15px; }
+        body.dashboard-page .mobile-brand { font-size: 16px; }
+        body.dashboard-page .page-main { padding: 11px 10px 24px; }
+        body.dashboard-page .mobile-bottom-nav { height: 62px; }
+        .dashboard-desktop { display: none; }
+        .dashboard-mobile { display: block; margin: 0 auto; max-width: 520px; }
+        .mobile-dashboard-heading { margin: 2px 0 17px; }
+        .mobile-dashboard-heading h1 { font-size: 19px; letter-spacing: -.035em; margin: 0 0 3px; }
+        .mobile-dashboard-heading p { color: #667085; font-size: 10px; margin: 0; }
+        .mobile-total-card { align-items: center; background: #0756d8; border-radius: 12px; color: #fff; display: flex; justify-content: space-between; min-height: 104px; overflow: hidden; padding: 16px; position: relative; }
+        .mobile-total-card span { display: block; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; }
+        .mobile-total-card strong { display: block; font-size: 26px; letter-spacing: -.035em; margin: 4px 0 8px; }
+        .mobile-total-card small { align-items: center; background: rgba(255,255,255,.14); border-radius: 999px; display: inline-flex; font-size: 8px; gap: 4px; padding: 4px 7px; }
+        .mobile-total-card small .lucide { height: 10px; width: 10px; }
+        .mobile-total-art { height: 88px; opacity: .13; position: absolute; right: 7px; width: 88px; }
+        .mobile-summary-grid { display: grid; gap: 9px; grid-template-columns: 1fr 1fr; margin: 10px 0 19px; }
+        .mobile-summary-card { background: #fff; border: 1px solid #d8ddea; border-radius: 9px; min-height: 82px; padding: 11px; }
+        .mobile-summary-card > span { align-items: center; color: #475467; display: flex; font-size: 8px; gap: 5px; }
+        .mobile-summary-card > span .lucide { border-radius: 4px; height: 20px; padding: 4px; width: 20px; }
+        .mobile-summary-card.recovered > span .lucide { background: #dcfae6; color: #079455; }
+        .mobile-summary-card.pending > span .lucide { background: #fff0d5; color: #b54708; }
+        .mobile-summary-card strong { display: block; font-size: 16px; margin: 8px 0 7px; }
+        .summary-progress { background: #e8ebf2; display: block; height: 2px; position: relative; width: 100%; }
+        .summary-progress::after { content: ""; display: block; height: 2px; width: 60%; }
+        .recovered .summary-progress::after { background: #12b76a; }
+        .pending .summary-progress::after { background: #f79009; }
+        .mobile-dashboard-section { margin-bottom: 17px; }
+        .mobile-dashboard-section > header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .mobile-dashboard-section h2 { font-size: 14px; margin: 0; }
+        .mobile-dashboard-section header a { color: #0756d8; font-size: 9px; font-weight: 600; text-decoration: none; }
+        .mobile-performance { background: #fff; border: 1px solid #d8ddea; border-radius: 9px; padding: 12px; }
+        .mobile-performance > header { margin-bottom: 3px; }
+        .mobile-bars { align-items: end; border-bottom: 1px solid #e5e8f0; display: flex; gap: 8px; height: 100px; justify-content: space-around; padding: 10px 4px 0; }
+        .mobile-bars > div { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; }
+        .mobile-bar-track { align-items: flex-end; display: flex; height: 72px; width: 100%; }
+        .mobile-bar-track i { background: #dbe6ff; border-radius: 6px 6px 0 0; display: block; min-height: 8px; width: 100%; }
+        .mobile-bars > div:nth-last-child(2) .mobile-bar-track i { background: #0756d8; }
+        .mobile-bars small { color: #667085; font-size: 7px; margin: 5px 0; }
+        .mobile-chart-legend { align-items: center; color: #667085; display: flex; font-size: 7px; gap: 5px; padding-top: 9px; }
+        .mobile-chart-legend i { background: #0756d8; border-radius: 50%; height: 5px; width: 5px; }
+        .mobile-chart-legend i:nth-of-type(2) { background: #cbd5ea; margin-left: 7px; }
+        .overdue-count { background: #fee4e2; border-radius: 999px; color: #d92d20; font-size: 7px; font-weight: 700; padding: 3px 6px; }
+        .mobile-dashboard-section .upcoming-list, .activity-list { background: #fff; border: 1px solid #d8ddea; border-radius: 9px; overflow: hidden; }
+        .mobile-dashboard-section .upcoming-item { min-height: 58px; padding: 8px 10px; }
+        .borrower-avatar { align-items: center; background: #e8efff; border-radius: 50%; color: #0756d8; display: flex; height: 31px; justify-content: center; width: 31px; }
+        .borrower-avatar .lucide { height: 14px; width: 14px; }
+        .mobile-dashboard-section .upcoming-person strong { font-size: 10px; }
+        .mobile-dashboard-section .upcoming-person small { font-size: 8px; }
+        .mobile-dashboard-section .upcoming-amount strong { font-size: 10px; }
+        .mobile-dashboard-section .upcoming-amount small { background: #e8efff; border-radius: 3px; color: #0756d8; display: inline-block; font-size: 6px; padding: 2px 4px; }
+        .activity-item { align-items: center; border-bottom: 1px solid #eef0f5; display: grid; gap: 9px; grid-template-columns: auto 1fr auto; min-height: 55px; padding: 8px 10px; }
+        .activity-item:last-child { border-bottom: 0; }
+        .activity-icon { align-items: center; border-radius: 50%; display: flex; height: 30px; justify-content: center; width: 30px; }
+        .activity-icon.loan { background: #dcfae6; color: #079455; }
+        .activity-icon.payment { background: #e8efff; color: #0756d8; }
+        .activity-icon .lucide { height: 14px; width: 14px; }
+        .activity-item strong, .activity-item small { display: block; }
+        .activity-item strong { font-size: 9px; }
+        .activity-item small { color: #667085; font-size: 8px; margin-top: 3px; }
+        .activity-item time { color: #667085; font-size: 7px; }
+        .dashboard-fab { align-items: center; background: #0756d8; border-radius: 50%; bottom: 75px; box-shadow: 0 7px 18px rgba(7, 86, 216, .3); color: #fff; display: flex; height: 48px; justify-content: center; position: fixed; right: 14px; width: 48px; z-index: 45; }
+        .dashboard-fab .lucide { height: 22px; width: 22px; }
+    }
 </style>
 {% endblock %}
