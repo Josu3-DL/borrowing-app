@@ -95,19 +95,7 @@
             padding: 0 14px;
             width: min(280px, 32vw);
         }
-        .topbar-user { align-items: center; display: flex; gap: 16px; }
-        .notification { font-size: 20px; position: relative; }
-        .notification::after {
-            background: #d92d20;
-            border: 2px solid var(--surface);
-            border-radius: 999px;
-            content: "";
-            height: 7px;
-            position: absolute;
-            right: -1px;
-            top: 0;
-            width: 7px;
-        }
+        .topbar-user { align-items: center; display: flex; gap: 12px; }
         .avatar {
             align-items: center;
             background: #dfe7fb;
@@ -245,10 +233,133 @@
         }
         .field input::placeholder { color: #98a2b3; }
         .field input:focus, .field select:focus { border-color: var(--primary); outline: 3px solid #e1e9ff; }
-        .phone-control { display: grid; gap: 9px; grid-template-columns: minmax(122px, .75fr) minmax(135px, 1.25fr); }
-        .phone-control .phone-prefix, .phone-control .phone-number { min-width: 0; }
-        .auth-form .phone-control input, .auth-form .phone-control select,
-        .profile-card .phone-control input, .profile-card .phone-control select { height: 46px; }
+        .phone-control { display: grid; gap: 9px; grid-template-columns: minmax(150px, .75fr) minmax(135px, 1.25fr); }
+        .phone-control .phone-number { min-width: 0; }
+        .phone-country-select { min-width: 0; position: relative; }
+        .phone-prefix-native {
+            clip: rect(0, 0, 0, 0);
+            clip-path: inset(50%);
+            height: 1px !important;
+            overflow: hidden;
+            position: absolute;
+            white-space: nowrap;
+            width: 1px !important;
+        }
+        .phone-prefix-trigger {
+            align-items: center;
+            background: #fbfcff;
+            border: 1px solid #cbd2e3;
+            border-radius: 9px;
+            color: var(--neutral);
+            cursor: pointer;
+            display: flex;
+            gap: 8px;
+            height: 43px;
+            padding: 0 12px;
+            text-align: left;
+            width: 100%;
+        }
+        .phone-prefix-trigger:hover { border-color: #98a2b3; }
+        .phone-prefix-trigger:focus, .phone-country-select.is-open .phone-prefix-trigger {
+            border-color: var(--primary);
+            outline: 3px solid #e1e9ff;
+        }
+        .phone-prefix-trigger img, .phone-prefix-options img {
+            border: 1px solid rgba(17, 24, 39, .12);
+            border-radius: 3px;
+            flex: 0 0 auto;
+            object-fit: cover;
+        }
+        .phone-trigger-code { color: #667085; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+        .phone-trigger-prefix { font-weight: 600; }
+        .phone-trigger-chevron {
+            border-bottom: 1.5px solid currentColor;
+            border-right: 1.5px solid currentColor;
+            height: 7px;
+            margin-left: auto;
+            transform: rotate(45deg) translateY(-2px);
+            transition: transform .16s ease;
+            width: 7px;
+        }
+        .phone-country-select.is-open .phone-trigger-chevron { transform: rotate(225deg) translate(-1px, -1px); }
+        .phone-prefix-popover {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 18px 48px rgba(17, 24, 39, .18);
+            min-width: min(360px, calc(100vw - 36px));
+            overflow: hidden;
+            position: fixed;
+            width: 340px;
+            z-index: 40;
+        }
+        .phone-prefix-search-wrap {
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            padding: 10px;
+            position: relative;
+        }
+        .field .phone-prefix-search-wrap input.phone-prefix-search {
+            background: #f8f9fc;
+            height: 39px;
+            padding: 0 12px 0 42px;
+        }
+        .phone-search-icon {
+            border: 1.5px solid #667085;
+            border-radius: 50%;
+            height: 13px;
+            left: 24px;
+            pointer-events: none;
+            position: absolute;
+            width: 13px;
+            z-index: 1;
+        }
+        .phone-search-icon::after {
+            background: #667085;
+            content: "";
+            height: 1.5px;
+            position: absolute;
+            right: -5px;
+            top: 10px;
+            transform: rotate(45deg);
+            width: 6px;
+        }
+        .phone-prefix-options {
+            list-style: none;
+            margin: 0;
+            max-height: var(--phone-options-max-height, 280px);
+            overflow-y: auto;
+            padding: 6px;
+        }
+        .phone-prefix-options li[hidden] { display: none; }
+        .phone-prefix-options button {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 8px;
+            color: var(--neutral);
+            cursor: pointer;
+            display: grid;
+            gap: 9px;
+            grid-template-columns: 24px minmax(120px, 1fr) 27px auto;
+            min-height: 42px;
+            padding: 7px 9px;
+            text-align: left;
+            width: 100%;
+        }
+        .phone-prefix-options button:hover,
+        .phone-prefix-options button:focus,
+        .phone-prefix-options li.is-active button { background: var(--primary-soft); outline: 0; }
+        .phone-prefix-options li[aria-selected="true"] button { color: var(--primary-strong); font-weight: 600; }
+        .phone-country-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .phone-country-code { color: #98a2b3; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+        .phone-dial-code { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+        .phone-prefix-empty { color: #667085; font-size: 13px; margin: 0; padding: 20px; text-align: center; }
+        .auth-form .phone-control .phone-number,
+        .auth-form .phone-prefix-trigger,
+        .profile-card .phone-control .phone-number,
+        .profile-card .phone-prefix-trigger { height: 46px; }
         .field.has-live-error input, .field.has-live-error select { border-color: var(--danger); }
         .field.has-live-error input:focus, .field.has-live-error select:focus { outline-color: var(--danger-soft); }
         .live-feedback { font-size: 11px; line-height: 1.35; min-height: 15px; padding-top: 4px; }
@@ -383,7 +494,7 @@
             color: #fff;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             min-height: 100vh;
             overflow: hidden;
             padding: 48px clamp(36px, 5vw, 76px);
@@ -415,24 +526,9 @@
             width: 43px;
         }
         .auth-brand-mark .lucide { height: 23px; width: 23px; }
-        .auth-pitch { max-width: 610px; position: relative; z-index: 1; }
+        .auth-pitch { margin: auto 0; max-width: 610px; position: relative; z-index: 1; }
         .auth-pitch h2 { font-size: clamp(34px, 4vw, 55px); letter-spacing: -.045em; line-height: 1.08; margin: 0 0 22px; }
         .auth-pitch > p { color: #dbe7ff; font-size: 16px; line-height: 1.65; margin: 0; max-width: 560px; }
-        .portfolio-card {
-            background: rgba(255,255,255,.11);
-            border: 1px solid rgba(255,255,255,.17);
-            border-radius: 12px;
-            margin-top: 34px;
-            padding: 20px;
-        }
-        .portfolio-card span { color: #dbe7ff; display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-        .portfolio-card strong { display: block; font-size: 20px; margin-top: 4px; }
-        .portfolio-progress { background: rgba(255,255,255,.2); border-radius: 999px; height: 5px; margin-top: 24px; overflow: hidden; }
-        .portfolio-progress i { background: #fff; border-radius: inherit; display: block; height: 100%; width: 67%; }
-        .auth-proof { align-items: center; color: #e8efff; display: flex; font-size: 12px; gap: 12px; position: relative; z-index: 1; }
-        .proof-avatars { display: flex; }
-        .proof-avatars span { align-items: center; background: #dce6fb; border: 2px solid #fff; border-radius: 50%; color: var(--primary-strong); display: flex; font-size: 9px; font-weight: 800; height: 30px; justify-content: center; margin-left: -7px; width: 30px; }
-        .proof-avatars span:first-child { margin-left: 0; }
 
         .auth-panel {
             align-items: center;
@@ -629,8 +725,9 @@
             .profile-form-grid { display: block; }
             .profile-form-grid .field { margin-bottom: 15px; }
             .profile-card .field input { height: 42px; }
-            .auth-form .phone-control input, .auth-form .phone-control select,
-            .profile-card .phone-control input, .profile-card .phone-control select { height: 42px; }
+            .auth-form .phone-control .phone-number, .auth-form .phone-prefix-trigger,
+            .profile-card .phone-control .phone-number, .profile-card .phone-prefix-trigger { height: 42px; }
+            .field .phone-prefix-search { height: 39px; }
             .profile-actions { border: 0; display: block; margin-top: 4px; padding-top: 0; }
             .profile-actions .primary { width: 100%; }
             .profile-actions .secondary-button { display: none; }
@@ -677,7 +774,6 @@
         <header class="topbar">
             <div class="global-search"><i data-lucide="search" aria-hidden="true"></i><span>Buscar...</span></div>
             <div class="topbar-user">
-                <span class="notification" aria-label="Notificaciones"><i data-lucide="bell" aria-hidden="true"></i></span>
                 <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
                 <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
             </div>
@@ -685,7 +781,7 @@
 
         <header class="mobile-header">
             <a class="mobile-brand" href="{% url 'loans:list' %}">Borrowing</a>
-            <div class="mobile-user"><span class="notification" aria-label="Notificaciones"><i data-lucide="bell" aria-hidden="true"></i></span><span class="avatar">{{ user.username|slice:":2"|upper }}</span></div>
+            <div class="mobile-user"><span class="avatar">{{ user.username|slice:":2"|upper }}</span></div>
         </header>
 
         <main class="page-main">
@@ -732,6 +828,193 @@
             if (window.lucide) window.lucide.createIcons();
         }
     });
+
+    function initializePhoneCountrySelect(root) {
+        const trigger = root.querySelector(".phone-prefix-trigger");
+        const popover = root.querySelector(".phone-prefix-popover");
+        const search = root.querySelector(".phone-prefix-search");
+        const nativeSelect = root.querySelector(".phone-prefix-native");
+        const options = Array.from(root.querySelectorAll("[data-phone-option]"));
+        const emptyState = root.querySelector(".phone-prefix-empty");
+        let activeIndex = -1;
+
+        function visibleOptions() {
+            return options.filter(function (option) { return !option.hidden; });
+        }
+
+        function setActive(option) {
+            options.forEach(function (item) {
+                item.classList.toggle("is-active", item === option);
+            });
+            const visible = visibleOptions();
+            activeIndex = option ? visible.indexOf(option) : -1;
+            if (option) option.scrollIntoView({ block: "nearest" });
+        }
+
+        function filterOptions() {
+            const query = search.value
+                .trim()
+                .toLocaleLowerCase("es")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+
+            options.forEach(function (option) {
+                const searchable = option.dataset.search
+                    .toLocaleLowerCase("es")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+                option.hidden = query ? !searchable.includes(query) : false;
+            });
+            const visible = visibleOptions();
+            emptyState.hidden = visible.length > 0;
+            setActive(visible[0] || null);
+        }
+
+        function positionPopover() {
+            if (popover.hidden) return;
+
+            const triggerRect = trigger.getBoundingClientRect();
+            const viewportMargin = 12;
+            const gap = 7;
+            const availableBelow =
+                window.innerHeight - triggerRect.bottom - gap - viewportMargin;
+            const availableAbove = triggerRect.top - gap - viewportMargin;
+            const opensAbove =
+                availableBelow < 260 && availableAbove > availableBelow;
+            const availableHeight = opensAbove ? availableAbove : availableBelow;
+            const popoverHeight = Math.max(
+                120,
+                Math.min(350, availableHeight)
+            );
+            const availableWidth = window.innerWidth - viewportMargin * 2;
+            const popoverWidth = Math.min(
+                Math.max(triggerRect.width, 340),
+                availableWidth
+            );
+            const left = Math.max(
+                viewportMargin,
+                Math.min(
+                    triggerRect.left,
+                    window.innerWidth - popoverWidth - viewportMargin
+                )
+            );
+            const top = opensAbove
+                ? Math.max(
+                    viewportMargin,
+                    triggerRect.top - gap - popoverHeight
+                )
+                : triggerRect.bottom + gap;
+
+            popover.style.left = `${left}px`;
+            popover.style.top = `${top}px`;
+            popover.style.width = `${popoverWidth}px`;
+            popover.style.maxHeight = `${popoverHeight}px`;
+            popover.style.setProperty(
+                "--phone-options-max-height",
+                `${Math.max(70, popoverHeight - 61)}px`
+            );
+            popover.dataset.placement = opensAbove ? "top" : "bottom";
+        }
+
+        function open() {
+            document.querySelectorAll("[data-phone-country-select].is-open").forEach(function (other) {
+                if (other !== root && other._closePhoneSelect) other._closePhoneSelect();
+            });
+            popover.hidden = false;
+            root.classList.add("is-open");
+            trigger.setAttribute("aria-expanded", "true");
+            search.value = "";
+            positionPopover();
+            filterOptions();
+            const selected = options.find(function (option) {
+                return option.getAttribute("aria-selected") === "true";
+            });
+            if (selected) setActive(selected);
+            window.requestAnimationFrame(function () {
+                search.focus();
+                if (selected) selected.scrollIntoView({ block: "nearest" });
+            });
+        }
+
+        function close(returnFocus) {
+            popover.hidden = true;
+            root.classList.remove("is-open");
+            trigger.setAttribute("aria-expanded", "false");
+            setActive(null);
+            if (returnFocus) trigger.focus();
+        }
+
+        function choose(option) {
+            const countryName = option.querySelector(".phone-country-name").textContent;
+            const countryCode = option.querySelector(".phone-country-code").textContent;
+            const prefix = option.dataset.value;
+            const flag = option.querySelector("img");
+
+            nativeSelect.value = prefix;
+            nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+            trigger.querySelector("img").src = flag.src;
+            trigger.querySelector(".phone-trigger-code").textContent = countryCode;
+            trigger.querySelector(".phone-trigger-prefix").textContent = prefix;
+            trigger.setAttribute(
+                "aria-label",
+                `Prefijo internacional: ${countryName}, ${prefix}`
+            );
+            options.forEach(function (item) {
+                item.setAttribute("aria-selected", String(item === option));
+            });
+            close(true);
+        }
+
+        root._closePhoneSelect = close;
+        trigger.addEventListener("click", function () {
+            if (popover.hidden) open();
+            else close(false);
+        });
+        trigger.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                open();
+            }
+        });
+        search.addEventListener("input", filterOptions);
+        search.addEventListener("keydown", function (event) {
+            const visible = visibleOptions();
+            if (event.key === "Escape") {
+                event.preventDefault();
+                close(true);
+                return;
+            }
+            if (!visible.length) return;
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                const direction = event.key === "ArrowDown" ? 1 : -1;
+                activeIndex = Math.max(
+                    0,
+                    Math.min(visible.length - 1, activeIndex + direction)
+                );
+                setActive(visible[activeIndex]);
+            } else if (event.key === "Enter") {
+                event.preventDefault();
+                choose(visible[Math.max(activeIndex, 0)]);
+            }
+        });
+        options.forEach(function (option) {
+            option.querySelector("button").addEventListener("click", function () {
+                choose(option);
+            });
+        });
+        document.addEventListener("click", function (event) {
+            if (!root.contains(event.target)) close(false);
+        });
+        window.addEventListener("resize", positionPopover);
+        window.addEventListener(
+            "scroll",
+            function () {
+                if (!popover.hidden) positionPopover();
+            },
+            true
+        );
+    }
 
     function validationResult(field) {
         const value = field.value.trim();
@@ -873,6 +1156,9 @@
     });
 
     document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-phone-country-select]").forEach(
+            initializePhoneCountrySelect
+        );
         if (window.lucide) window.lucide.createIcons();
     });
 </script>
