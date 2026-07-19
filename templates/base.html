@@ -76,24 +76,13 @@
             border-bottom: 1px solid var(--border);
             display: flex;
             height: 64px;
-            justify-content: space-between;
+            justify-content: flex-end;
             left: 260px;
             padding: 0 28px 0 38px;
             position: fixed;
             right: 0;
             top: 0;
             z-index: 20;
-        }
-        .global-search {
-            align-items: center;
-            background: #eef2ff;
-            border-radius: 9px;
-            color: var(--muted);
-            display: flex;
-            gap: 10px;
-            height: 40px;
-            padding: 0 14px;
-            width: min(280px, 32vw);
         }
         .topbar-user { align-items: center; display: flex; gap: 12px; }
         .avatar {
@@ -750,20 +739,19 @@
         }
     </style>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 {% if user.is_authenticated %}
     <div class="app-shell">
         <aside class="sidebar">
-            <a class="brand" href="{% url 'loans:list' %}">
+            <a class="brand" href="{% url 'loans:dashboard' %}">
                 <strong>Borrowing</strong>
                 <span>Gestión de préstamos</span>
             </a>
             <nav class="side-nav" aria-label="Navegación principal">
-                <a class="nav-item" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="layout-dashboard" aria-hidden="true"></i>Panel</a>
-                <a class="nav-item {% if request.resolver_match.namespace == 'loans' %}active{% endif %}" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="hand-coins" aria-hidden="true"></i>Préstamos</a>
-                <a class="nav-item" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="banknote" aria-hidden="true"></i>Pagos</a>
+                <a class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'loans:dashboard' %}"><i class="nav-icon" data-lucide="layout-dashboard" aria-hidden="true"></i>Panel</a>
+                <a class="nav-item {% if request.resolver_match.namespace == 'loans' and request.resolver_match.url_name != 'dashboard' %}active{% endif %}" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="hand-coins" aria-hidden="true"></i>Préstamos</a>
+                <a class="nav-item {% if request.resolver_match.namespace == 'payments' %}active{% endif %}" href="{% url 'payments:list' %}"><i class="nav-icon" data-lucide="banknote" aria-hidden="true"></i>Pagos</a>
                 <a class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'users:profile' %}"><i class="nav-icon" data-lucide="user-round" aria-hidden="true"></i>Perfil</a>
-                <a class="nav-item" href="{% url 'users:profile' %}"><i class="nav-icon" data-lucide="settings" aria-hidden="true"></i>Configuración</a>
             </nav>
             <form class="logout-form" method="post" action="{% url 'users:logout' %}">
                 {% csrf_token %}
@@ -772,7 +760,6 @@
         </aside>
 
         <header class="topbar">
-            <div class="global-search"><i data-lucide="search" aria-hidden="true"></i><span>Buscar...</span></div>
             <div class="topbar-user">
                 <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
                 <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
@@ -780,7 +767,7 @@
         </header>
 
         <header class="mobile-header">
-            <a class="mobile-brand" href="{% url 'loans:list' %}">Borrowing</a>
+            <a class="mobile-brand" href="{% url 'loans:dashboard' %}">{% block mobile_brand_content %}Borrowing{% endblock %}</a>
             <div class="mobile-user"><span class="avatar">{{ user.username|slice:":2"|upper }}</span></div>
         </header>
 
@@ -794,9 +781,9 @@
         </main>
 
         <nav class="mobile-bottom-nav" aria-label="Navegación móvil">
-            <a href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="layout-dashboard" aria-hidden="true"></i>Panel</a>
-            <a class="{% if request.resolver_match.namespace == 'loans' %}active{% endif %}" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="hand-coins" aria-hidden="true"></i>Préstamos</a>
-            <a href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="banknote" aria-hidden="true"></i>Pagos</a>
+            <a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'loans:dashboard' %}"><i class="nav-icon" data-lucide="layout-dashboard" aria-hidden="true"></i>Panel</a>
+            <a class="{% if request.resolver_match.namespace == 'loans' and request.resolver_match.url_name != 'dashboard' %}active{% endif %}" href="{% url 'loans:list' %}"><i class="nav-icon" data-lucide="hand-coins" aria-hidden="true"></i>Préstamos</a>
+            <a class="{% if request.resolver_match.namespace == 'payments' %}active{% endif %}" href="{% url 'payments:list' %}"><i class="nav-icon" data-lucide="banknote" aria-hidden="true"></i>Pagos</a>
             <a class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'users:profile' %}"><i class="nav-icon" data-lucide="user-round" aria-hidden="true"></i>Perfil</a>
         </nav>
     </div>
@@ -1153,6 +1140,50 @@
                 if (firstError) firstError.focus();
             }
         });
+    });
+
+    function dismissDialog(dialog) {
+        if (!dialog) return;
+        const closeLink = dialog.querySelector(
+            ".modal-close, .payment-modal-header a[href], [data-modal-close]"
+        );
+        if (closeLink && closeLink.href) {
+            window.location.assign(closeLink.href);
+        }
+    }
+
+    document.addEventListener("click", function (event) {
+        document.querySelectorAll("details[open]").forEach(function (dropdown) {
+            if (!dropdown.contains(event.target)) dropdown.removeAttribute("open");
+        });
+
+        const backdrop = event.target.closest(
+            ".modal-backdrop, .payment-modal-backdrop"
+        );
+        if (backdrop && event.target === backdrop) {
+            dismissDialog(backdrop.querySelector('[role="dialog"]'));
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") return;
+
+        const dialog = document.querySelector(
+            ".modal-backdrop [role='dialog'], .payment-modal-backdrop [role='dialog']"
+        );
+        if (dialog) {
+            event.preventDefault();
+            dismissDialog(dialog);
+            return;
+        }
+
+        const openDropdowns = document.querySelectorAll("details[open]");
+        if (openDropdowns.length) {
+            event.preventDefault();
+            openDropdowns.forEach(function (dropdown) {
+                dropdown.removeAttribute("open");
+            });
+        }
     });
 
     document.addEventListener("DOMContentLoaded", function () {

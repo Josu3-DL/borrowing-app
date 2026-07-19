@@ -1,202 +1,229 @@
 {% extends "base.html" %}
-{% block title %}{{ title }} | Borrowing App{% endblock %}
+{% block title %}Registrar pago | Borrowing{% endblock %}
+{% block body_class %}payments-page payment-modal-page{% endblock %}
+{% block mobile_brand_content %}<i data-lucide="wallet-cards" aria-hidden="true"></i> Pagos{% endblock %}
 {% block content %}
-<div class="page-heading">
-    <div>
-        <h1>{{ title }}</h1>
-        <p>Tipo de cambio fijo: <strong>C${{ exchange_rate }} = $1 USD</strong></p>
-    </div>
+<div class="payment-form-underlay" aria-hidden="true">
+    {% include "payments/_payment_page.html" %}
 </div>
 
-<form method="post" novalidate id="payment-form">
-    {% csrf_token %}
-
-    {% for field in form %}
-        <p>
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
-            {{ field.errors }}
-        </p>
-    {% endfor %}
-
-    {% if form.non_field_errors %}
-        <ul class="errorlist">
-            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-        </ul>
-    {% endif %}
-
-    <!-- Alerta: prestamo ya pagado -->
-    <div id="alert-paid" class="alert alert--error" style="display:none;">
-        <strong>&#9888; Prestamo ya pagado.</strong>
-        Este prestamo esta completamente saldado. No se pueden registrar mas abonos.
-    </div>
-
-    <!-- Alerta: monto excede saldo -->
-    <div id="alert-overflow" class="alert alert--warning" style="display:none;">
-        <strong>&#9888; Monto excede el saldo.</strong>
-        <span id="alert-overflow-msg"></span>
-    </div>
-
-    <!-- Panel de informacion del prestamo y conversion -->
-    <div id="info-panel" style="display:none; margin-bottom:1.5rem;">
-        <div class="loan-summary" id="loan-info">
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Prestamo</span>
-                <span class="loan-summary-value" id="info-borrower">-</span>
+<div class="payment-modal-backdrop">
+    <section class="payment-modal-card" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+        <header class="payment-modal-header">
+            <div>
+                <h1 id="payment-modal-title">Registrar pago</h1>
+                <p>Completa la información para registrar la transacción.</p>
             </div>
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Moneda del prestamo</span>
-                <span class="loan-summary-value" id="info-loan-currency">-</span>
-            </div>
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Monto original</span>
-                <span class="loan-summary-value" id="info-amount">-</span>
-            </div>
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Saldo pendiente</span>
-                <span class="loan-summary-value loan-summary-value--pending" id="info-balance">-</span>
-            </div>
-        </div>
+            <a href="{% url 'payments:list' %}" aria-label="Cerrar">
+                <i data-lucide="x" aria-hidden="true"></i>
+            </a>
+        </header>
 
-        <div id="conversion-panel" style="display:none; margin-top:.75rem;"
-             class="loan-summary">
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Moneda del abono</span>
-                <span class="loan-summary-value" id="conv-pay-currency">-</span>
-            </div>
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Equivale en moneda del prestamo</span>
-                <span class="loan-summary-value loan-summary-value--paid" id="conv-equivalent">-</span>
-            </div>
-            <div class="loan-summary-item">
-                <span class="loan-summary-label">Saldo despues del abono</span>
-                <span class="loan-summary-value" id="conv-after">-</span>
-            </div>
-        </div>
-    </div>
+        <form method="post" novalidate id="payment-form">
+            {% csrf_token %}
+            <div class="payment-modal-body">
+                {% if form.non_field_errors %}
+                    <div class="payment-form-errors">{{ form.non_field_errors }}</div>
+                {% endif %}
 
-    <div class="form-actions">
-        <button type="submit" id="submit-btn">Guardar abono</button>
-        <a href="{% url 'payments:list' %}">Cancelar</a>
-    </div>
-</form>
+                <div class="payment-form-grid">
+                    <div class="payment-form-field">
+                        {{ form.loan.label_tag }}
+                        {{ form.loan }}
+                        {{ form.loan.errors }}
+                    </div>
+                    <div class="payment-form-field">
+                        {{ form.payment_date.label_tag }}
+                        {{ form.payment_date }}
+                        {{ form.payment_date.errors }}
+                    </div>
+                    <div class="payment-form-field">
+                        {{ form.amount.label_tag }}
+                        <div class="payment-amount-control">
+                            <span>$</span>{{ form.amount }}
+                        </div>
+                        {{ form.amount.errors }}
+                    </div>
+                    <div class="payment-form-field">
+                        {{ form.currency.label_tag }}
+                        {{ form.currency }}
+                        {{ form.currency.errors }}
+                    </div>
+                    <div class="payment-form-field full">
+                        {{ form.notes.label_tag }}
+                        {{ form.notes }}
+                        {{ form.notes.errors }}
+                    </div>
+                </div>
+
+                <div id="alert-paid" class="payment-alert error" hidden>
+                    Este préstamo está completamente pagado y no admite más abonos.
+                </div>
+                <div id="alert-overflow" class="payment-alert warning" hidden>
+                    <span id="alert-overflow-msg"></span>
+                </div>
+
+                <div id="info-panel" class="payment-loan-info" hidden>
+                    <div><span>Persona</span><strong id="info-borrower">—</strong></div>
+                    <div><span>Préstamo</span><strong id="info-amount">—</strong></div>
+                    <div><span>Saldo</span><strong id="info-balance">—</strong></div>
+                    <div><span>Moneda</span><strong id="info-loan-currency">—</strong></div>
+                </div>
+                <div id="conversion-panel" class="payment-conversion-info" hidden>
+                    <span id="conv-pay-currency">—</span>
+                    <strong id="conv-equivalent">—</strong>
+                    <small>Saldo posterior: <b id="conv-after">—</b></small>
+                </div>
+            </div>
+
+            <footer class="payment-modal-footer">
+                <a href="{% url 'payments:list' %}">Cancelar</a>
+                <button type="submit" id="submit-btn">Registrar pago</button>
+            </footer>
+        </form>
+    </section>
+</div>
 
 <style>
-    .loan-summary { background:#f8fafc; border:1px solid #e2e8f0; border-radius:.6rem;
-                    display:flex; flex-wrap:wrap; gap:1.5rem; padding:1.2rem 1.6rem; }
-    .loan-summary-item { display:flex; flex-direction:column; gap:.2rem; }
-    .loan-summary-label { color:#667085; font-size:.8rem; font-weight:600;
-                          text-transform:uppercase; letter-spacing:.04em; }
-    .loan-summary-value { font-size:1.25rem; font-weight:700; color:#182230; }
-    .loan-summary-value--paid    { color:#067647; }
-    .loan-summary-value--pending { color:#b54708; }
+    .payment-form-underlay { filter: blur(3px); pointer-events: none; user-select: none; }
+    .payment-modal-backdrop { align-items: center; background: rgba(29, 41, 57, .3); display: flex; inset: 0; justify-content: center; padding: 22px; position: fixed; z-index: 100; }
+    .payment-modal-card { background: #fff; border-radius: 12px; box-shadow: 0 24px 70px rgba(16,24,40,.25); max-height: calc(100vh - 44px); overflow-y: auto; width: min(760px, 100%); }
+    .payment-modal-header { align-items: flex-start; background: #f1f3ff; border-bottom: 1px solid #d8ddea; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; padding: 22px 26px; }
+    .payment-modal-header h1 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 4px; text-transform: capitalize; }
+    .payment-modal-header p { color: #667085; font-size: 13px; margin: 0; }
+    .payment-modal-header > a { color: #667085; padding: 2px; }
+    .payment-modal-header .lucide { height: 18px; width: 18px; }
+    .payment-modal-body { padding: 27px 26px 24px; }
+    .payment-form-grid { display: grid; gap: 20px 18px; grid-template-columns: 1fr 1fr; }
+    .payment-form-field.full { grid-column: 1 / -1; }
+    .payment-form-field label { color: #344054; display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+    .payment-form-field input, .payment-form-field select, .payment-form-field textarea { background: #fbfcff; border: 1px solid #cbd2e3; border-radius: 8px; color: #344054; font-size: 14px; width: 100%; }
+    .payment-form-field input, .payment-form-field select { height: 46px; padding: 0 12px; }
+    .payment-form-field textarea { min-height: 100px; padding: 12px; resize: vertical; }
+    .payment-form-field input:focus, .payment-form-field select:focus, .payment-form-field textarea:focus { border-color: #0756d8; outline: 3px solid #e1e9ff; }
+    .payment-amount-control { position: relative; }
+    .payment-amount-control > span { color: #667085; font-size: 14px; left: 12px; position: absolute; top: 14px; }
+    .payment-amount-control input { padding-left: 27px; }
+    .payment-form-field .errorlist, .payment-form-errors .errorlist { color: #d92d20; font-size: 12px; list-style: none; margin: 5px 0 0; padding: 0; }
+    .payment-form-errors { background: #fef3f2; border: 1px solid #fecdca; border-radius: 7px; margin-bottom: 16px; padding: 9px 11px; }
+    .payment-alert { border-radius: 7px; font-size: 12px; margin-top: 13px; padding: 10px 12px; }
+    .payment-alert.error { background: #fef3f2; border: 1px solid #fecdca; color: #b42318; }
+    .payment-alert.warning { background: #fffaeb; border: 1px solid #fedf89; color: #b54708; }
+    .payment-alert[hidden], .payment-loan-info[hidden], .payment-conversion-info[hidden] { display: none; }
+    .payment-loan-info { background: #f8faff; border: 1px solid #dce3f2; border-radius: 8px; display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); margin-top: 14px; padding: 10px; }
+    .payment-loan-info span { color: #667085; display: block; font-size: 10px; text-transform: uppercase; }
+    .payment-loan-info strong { display: block; font-size: 13px; margin-top: 3px; }
+    .payment-conversion-info { align-items: center; background: #ecfdf3; border: 1px solid #abefc6; border-radius: 8px; display: flex; font-size: 12px; gap: 9px; margin-top: 8px; padding: 9px 11px; }
+    .payment-conversion-info strong { color: #067647; }
+    .payment-conversion-info small { color: #475467; margin-left: auto; }
+    .payment-modal-footer { align-items: center; border-top: 1px solid #d8ddea; display: flex; gap: 18px; justify-content: flex-end; padding: 17px 26px; }
+    .payment-modal-footer a { color: #667085; font-size: 13px; font-weight: 600; text-decoration: none; }
+    .payment-modal-footer button { background: #0756d8; border: 0; border-radius: 7px; color: #fff; cursor: pointer; font-size: 13px; font-weight: 700; min-height: 42px; padding: 0 21px; }
+    .payment-modal-footer button:disabled { cursor: not-allowed; opacity: .5; }
 
-    .alert { border-radius:.5rem; margin-bottom:1rem; padding:.9rem 1.2rem;
-             font-size:.92rem; line-height:1.5; }
-    .alert--error   { background:#fef3f2; border:1px solid #fda29b; color:#b42318; }
-    .alert--warning { background:#fffaeb; border:1px solid #fec84b; color:#b54708; }
-
-    button[disabled] { cursor:not-allowed; opacity:.5; }
+    @media (max-width: 900px) {
+        .payment-form-underlay { filter: blur(2px); }
+        .payment-modal-backdrop { align-items: flex-end; padding: 0; }
+        .payment-modal-card { border-radius: 18px 18px 0 0; max-height: calc(100vh - 20px); width: 100%; }
+        .payment-modal-card::before { background: #c8ced9; border-radius: 999px; content: ""; display: block; height: 4px; margin: 7px auto 0; width: 34px; }
+        .payment-modal-header { background: #fff; border-radius: 18px 18px 0 0; padding: 15px 16px 10px; }
+        .payment-modal-header h1 { font-size: 15px; }
+        .payment-modal-header p { font-size: 9px; }
+        .payment-modal-body { padding: 12px 16px 15px; }
+        .payment-form-grid { gap: 12px; grid-template-columns: 1fr; }
+        .payment-form-field.full { grid-column: auto; }
+        .payment-form-field input, .payment-form-field select { height: 39px; }
+        .payment-form-field textarea { min-height: 70px; }
+        .payment-loan-info { grid-template-columns: 1fr 1fr; }
+        .payment-conversion-info { align-items: flex-start; flex-direction: column; }
+        .payment-conversion-info small { margin-left: 0; }
+        .payment-modal-footer { padding: 12px 16px 17px; }
+        .payment-modal-footer button { flex: 1; }
+    }
 </style>
 
 <script>
 (function () {
-    const RATE = {{ exchange_rate }};
-    const LOAN_DATA = {{ loan_data_json|safe }};
+    const rate = {{ exchange_rate }};
+    const loanData = {{ loan_data_json|safe }};
+    const loanSelect = document.getElementById("id_loan");
+    const currencySelect = document.getElementById("id_currency");
+    const amountInput = document.getElementById("id_amount");
+    const infoPanel = document.getElementById("info-panel");
+    const conversionPanel = document.getElementById("conversion-panel");
+    const paidAlert = document.getElementById("alert-paid");
+    const overflowAlert = document.getElementById("alert-overflow");
+    const overflowMessage = document.getElementById("alert-overflow-msg");
+    const submitButton = document.getElementById("submit-btn");
 
-    const loanSel     = document.getElementById("id_loan");
-    const currSel     = document.getElementById("id_currency");
-    const amountIn    = document.getElementById("id_amount");
-    const infoPanel   = document.getElementById("info-panel");
-    const convPanel   = document.getElementById("conversion-panel");
-    const alertPaid   = document.getElementById("alert-paid");
-    const alertOflow  = document.getElementById("alert-overflow");
-    const alertOmsg   = document.getElementById("alert-overflow-msg");
-    const submitBtn   = document.getElementById("submit-btn");
-
-    function fmt(sym, val) {
-        return sym + parseFloat(val).toFixed(2);
+    function symbol(currency) {
+        return currency === "USD" ? "$" : "C$";
     }
 
-    function getSymbol(cur) { return cur === "USD" ? "$" : "C$"; }
+    function money(currency, value) {
+        return `${symbol(currency)}${Number(value).toFixed(2)}`;
+    }
 
-    function update() {
-        const loanId  = loanSel.value;
-        const payCur  = currSel ? currSel.value : "";
-        const amount  = parseFloat(amountIn ? amountIn.value : 0) || 0;
+    function setHidden(element, hidden) {
+        element.hidden = hidden;
+    }
 
-        // Ocultar alertas y habilitar boton por defecto
-        alertPaid.style.display  = "none";
-        alertOflow.style.display = "none";
-        submitBtn.disabled = false;
+    function updatePaymentPreview() {
+        const loan = loanData[loanSelect.value];
+        const paymentCurrency = currencySelect.value;
+        const amount = Number(amountInput.value) || 0;
 
-        if (!loanId || !LOAN_DATA[loanId]) {
-            infoPanel.style.display = "none";
+        setHidden(paidAlert, true);
+        setHidden(overflowAlert, true);
+        submitButton.disabled = false;
+
+        if (!loan) {
+            setHidden(infoPanel, true);
+            setHidden(conversionPanel, true);
             return;
         }
 
-        const loan    = LOAN_DATA[loanId];
-        const loanSym = getSymbol(loan.currency);
-        const paySym  = getSymbol(payCur);
-        const balance = parseFloat(loan.balance);
+        const balance = Number(loan.balance);
+        document.getElementById("info-borrower").textContent = loan.borrower;
+        document.getElementById("info-amount").textContent = money(loan.currency, loan.amount);
+        document.getElementById("info-balance").textContent = money(loan.currency, balance);
+        document.getElementById("info-loan-currency").textContent = loan.currency;
+        setHidden(infoPanel, false);
 
-        // Validacion JS: prestamo ya pagado
         if (loan.status === "paid") {
-            alertPaid.style.display = "block";
-            submitBtn.disabled = true;
+            setHidden(paidAlert, false);
+            submitButton.disabled = true;
         }
 
-        // Mostrar info del prestamo
-        document.getElementById("info-borrower").textContent      = loan.borrower;
-        document.getElementById("info-loan-currency").textContent = loan.currency;
-        document.getElementById("info-amount").textContent        = fmt(loanSym, loan.amount);
-        document.getElementById("info-balance").textContent       = fmt(loanSym, balance);
-        infoPanel.style.display = "block";
+        if (!paymentCurrency || amount <= 0) {
+            setHidden(conversionPanel, true);
+            return;
+        }
 
-        // Conversion y validacion de monto
-        if (payCur && amount > 0) {
-            let equivInLoan = amount;
-            if (payCur !== loan.currency) {
-                if (loan.currency === "USD") {
-                    equivInLoan = amount / RATE;
-                } else {
-                    equivInLoan = amount * RATE;
-                }
-            }
+        let equivalent = amount;
+        if (paymentCurrency !== loan.currency) {
+            equivalent = loan.currency === "USD" ? amount / rate : amount * rate;
+        }
+        const resultingBalance = Math.max(balance - equivalent, 0);
+        document.getElementById("conv-pay-currency").textContent = paymentCurrency;
+        document.getElementById("conv-equivalent").textContent =
+            `${money(paymentCurrency, amount)} = ${money(loan.currency, equivalent)}`;
+        document.getElementById("conv-after").textContent =
+            money(loan.currency, resultingBalance);
+        setHidden(conversionPanel, false);
 
-            // Validacion JS: monto excede saldo
-            if (equivInLoan > balance + 0.005) {  // margen de 0.005 por redondeo
-                const maxInPayCur = payCur !== loan.currency
-                    ? (loan.currency === "USD" ? balance * RATE : balance / RATE)
-                    : balance;
-                alertOmsg.textContent =
-                    " El equivalente en " + loan.currency + " es " +
-                    loanSym + equivInLoan.toFixed(2) + ", pero el saldo es solo " +
-                    loanSym + balance.toFixed(2) + ". " +
-                    "Maximo permitido: " + paySym + maxInPayCur.toFixed(2) + " " + payCur + ".";
-                alertOflow.style.display = "block";
-                if (loan.status !== "paid") submitBtn.disabled = true;
-            }
-
-            const afterBalance = Math.max(balance - equivInLoan, 0);
-
-            document.getElementById("conv-pay-currency").textContent = payCur;
-            document.getElementById("conv-equivalent").textContent   =
-                payCur !== loan.currency
-                    ? fmt(paySym, amount) + " = " + fmt(loanSym, equivInLoan)
-                    : fmt(paySym, amount);
-            document.getElementById("conv-after").textContent = fmt(loanSym, afterBalance);
-            convPanel.style.display = "flex";
-        } else {
-            convPanel.style.display = "none";
+        if (equivalent > balance + 0.005) {
+            overflowMessage.textContent =
+                `El equivalente supera el saldo disponible de ${money(loan.currency, balance)}.`;
+            setHidden(overflowAlert, false);
+            if (loan.status !== "paid") submitButton.disabled = true;
         }
     }
 
-    loanSel.addEventListener("change", update);
-    if (currSel) currSel.addEventListener("change", update);
-    if (amountIn) amountIn.addEventListener("input", update);
-    update();
+    loanSelect.addEventListener("change", updatePaymentPreview);
+    currencySelect.addEventListener("change", updatePaymentPreview);
+    amountInput.addEventListener("input", updatePaymentPreview);
+    updatePaymentPreview();
 })();
 </script>
 {% endblock %}

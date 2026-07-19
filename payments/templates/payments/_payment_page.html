@@ -1,0 +1,275 @@
+<section class="payments-desktop">
+    <header class="payments-heading">
+        <div>
+            <h1>Pagos</h1>
+            <p>Gestión y seguimiento de abonos realizados</p>
+        </div>
+        <a class="payments-primary-button" href="{% url 'payments:create' %}">
+            <i data-lucide="plus" aria-hidden="true"></i> Registrar pago
+        </a>
+    </header>
+
+    <div class="payments-overview">
+        <form class="payments-filter-card" method="get">
+            <div class="payment-filter-field">
+                <label for="payment-person-filter">Filtrar por persona</label>
+                <select id="payment-person-filter" name="borrower_name">
+                    <option value="">Todos los clientes</option>
+                    {% for person in person_choices %}
+                        <option value="{{ person }}" {% if selected_person == person %}selected{% endif %}>{{ person }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="payment-filter-field payment-date-filter">
+                <label for="id_date_from">Rango de fecha</label>
+                <div>
+                    {{ filter_form.date_from }}
+                    <span>—</span>
+                    {{ filter_form.date_to }}
+                </div>
+            </div>
+            <button class="payments-apply-button" type="submit">
+                <i data-lucide="list-filter" aria-hidden="true"></i> Aplicar
+            </button>
+            {{ filter_form.non_field_errors }}
+        </form>
+
+        <article class="payments-total-card">
+            <div>
+                <span>Total cobrado (mes)</span>
+                <strong>{{ total_collected_month }}</strong>
+                <small><i data-lucide="trending-up" aria-hidden="true"></i> {% if collected_change > 0 %}+{% endif %}{{ collected_change }}% vs mes anterior</small>
+            </div>
+            <i class="payments-total-art" data-lucide="banknote" aria-hidden="true"></i>
+        </article>
+    </div>
+
+    <article class="payments-table-card">
+        <div class="payments-table-wrap">
+            <table class="payments-table">
+                <thead>
+                    <tr>
+                        <th>Préstamo</th>
+                        <th>Persona</th>
+                        <th>Fecha del pago</th>
+                        <th>Monto abonado</th>
+                        <th>Saldo restante</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in payment_rows %}
+                        <tr>
+                            <td><a href="{% url 'loans:update' row.payment.loan.pk %}">#LN-{{ row.payment.loan.pk|stringformat:"04d" }}</a></td>
+                            <td>
+                                <div class="payment-person">
+                                    <span>{{ row.initials }}</span>
+                                    <div><strong>{{ row.payment.loan.borrower_name }}</strong><small>{{ row.payment.loan.borrower_phone|default:"Sin teléfono" }}</small></div>
+                                </div>
+                            </td>
+                            <td>{{ row.payment.payment_date|date:"d M, Y" }}</td>
+                            <td><strong>{{ row.amount }}</strong></td>
+                            <td>
+                                <strong class="{% if row.completed %}paid-balance{% endif %}">{{ row.balance }}</strong>
+                                {% if row.completed %}
+                                    <small class="payment-completed-label">Completado</small>
+                                {% else %}
+                                    <i class="balance-progress"><span></span></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <details class="payment-actions-menu">
+                                    <summary aria-label="Acciones"><i data-lucide="more-vertical" aria-hidden="true"></i></summary>
+                                    <form method="post" action="{% url 'payments:delete' row.payment.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit">Eliminar pago</button>
+                                    </form>
+                                </details>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td class="payments-empty" colspan="6">No hay pagos que coincidan con los filtros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <footer class="payments-pagination">
+            <span>Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} pagos</span>
+            {% if page_obj.paginator.num_pages > 1 %}
+                <nav aria-label="Paginación de pagos">
+                    {% if page_obj.has_previous %}<a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left" aria-hidden="true"></i></a>{% endif %}
+                    {% for number in page_obj.paginator.page_range %}
+                        {% if number == page_obj.number %}<strong>{{ number }}</strong>{% elif number <= 3 %}<a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ number }}">{{ number }}</a>{% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}<a href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}"><i data-lucide="chevron-right" aria-hidden="true"></i></a>{% endif %}
+                </nav>
+            {% endif %}
+        </footer>
+    </article>
+</section>
+
+<section class="payments-mobile" aria-labelledby="mobile-payments-title">
+    <h1 class="sr-only" id="mobile-payments-title">Pagos</h1>
+    <article class="mobile-payments-total">
+        <span>Total recaudado mes</span>
+        <strong>{{ total_collected_month }}</strong>
+        <small><i data-lucide="trending-up" aria-hidden="true"></i> {% if collected_change > 0 %}+{% endif %}{{ collected_change }}% vs mes anterior</small>
+    </article>
+
+    <div class="mobile-payment-counters">
+        <article><span>Pendientes</span><strong>{{ pending_count }}</strong></article>
+        <article><span>Vencidos</span><strong>{{ overdue_count }}</strong></article>
+    </div>
+
+    <section class="mobile-recent-payments">
+        <header>
+            <h2>Pagos recientes</h2>
+            <a href="{% url 'payments:list' %}">Ver todos <i data-lucide="chevron-right" aria-hidden="true"></i></a>
+        </header>
+        <div class="mobile-payment-list">
+            {% for row in payment_rows|slice:":6" %}
+                <article class="mobile-payment-item">
+                    <span class="mobile-payment-avatar">{{ row.initials }}</span>
+                    <div>
+                        <strong>{{ row.payment.loan.borrower_name }}</strong>
+                        <small>{{ row.payment.payment_date|date:"d M, Y" }}</small>
+                    </div>
+                    <div class="mobile-payment-amount">
+                        <strong>{{ row.amount }}</strong>
+                        <span class="{% if row.completed %}completed{% else %}review{% endif %}">{% if row.completed %}Completado{% else %}Aplicado{% endif %}</span>
+                    </div>
+                </article>
+            {% empty %}
+                <p class="payments-empty">No hay pagos registrados.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <a class="payments-fab" href="{% url 'payments:create' %}" aria-label="Registrar pago">
+        <i data-lucide="plus" aria-hidden="true"></i>
+    </a>
+</section>
+
+<style>
+    .payments-mobile { display: none; }
+    .payments-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 25px; }
+    .payments-heading h1 { font-size: 29px; letter-spacing: -.04em; margin: 0 0 3px; }
+    .payments-heading p { color: #667085; font-size: 14px; margin: 0; }
+    .payments-primary-button { align-items: center; background: #0756d8; border-radius: 9px; color: #fff; display: inline-flex; font-size: 12px; font-weight: 700; gap: 8px; min-height: 42px; padding: 0 18px; text-decoration: none; }
+    .payments-primary-button .lucide { height: 15px; width: 15px; }
+    .payments-overview { display: grid; gap: 18px; grid-template-columns: minmax(0, 2fr) minmax(235px, .9fr); margin-bottom: 24px; }
+    .payments-filter-card { align-items: end; background: #fff; border: 1px solid #cfd5e3; border-radius: 11px; display: grid; gap: 13px; grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.1fr) auto; min-height: 90px; padding: 15px; }
+    .payment-filter-field label { color: #475467; display: block; font-size: 9px; font-weight: 700; letter-spacing: .04em; margin-bottom: 6px; text-transform: uppercase; }
+    .payment-filter-field select, .payment-filter-field input { background: #fbfcff; border: 1px solid #cbd2e3; border-radius: 7px; color: #344054; height: 39px; min-width: 0; padding: 0 10px; width: 100%; }
+    .payment-date-filter > div { align-items: center; display: grid; gap: 5px; grid-template-columns: 1fr auto 1fr; }
+    .payments-apply-button { align-items: center; background: #e4e7ec; border: 0; border-radius: 7px; color: #667085; cursor: pointer; display: flex; font-size: 11px; gap: 7px; height: 39px; justify-content: center; padding: 0 16px; }
+    .payments-apply-button .lucide { height: 14px; width: 14px; }
+    .payments-total-card { align-items: center; background: linear-gradient(135deg, #3475ef, #0756d8); border-radius: 11px; color: #fff; display: flex; min-height: 90px; overflow: hidden; padding: 15px; position: relative; }
+    .payments-total-card span, .payments-total-card strong, .payments-total-card small { display: block; position: relative; z-index: 1; }
+    .payments-total-card span { color: #dbe7ff; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .payments-total-card strong { font-size: 28px; letter-spacing: -.035em; margin: 2px 0 6px; }
+    .payments-total-card small { align-items: center; display: flex; font-size: 9px; font-weight: 700; gap: 5px; }
+    .payments-total-card small .lucide { height: 11px; width: 11px; }
+    .payments-total-art { height: 84px; opacity: .13; position: absolute; right: 2px; width: 84px; }
+    .payments-table-card { background: #fff; border: 1px solid #cfd5e3; border-radius: 11px; overflow: visible; }
+    .payments-table-wrap { overflow: visible; }
+    .payments-table { border-collapse: collapse; width: 100%; }
+    .payments-table thead { background: #f0f3ff; }
+    .payments-table th { color: #344054; font-size: 10px; font-weight: 600; letter-spacing: .04em; padding: 15px 18px; text-align: left; text-transform: uppercase; }
+    .payments-table td { border-top: 1px solid #d9deea; color: #344054; font-size: 11px; height: 66px; padding: 10px 18px; }
+    .payments-table td > a { color: #0756d8; font-weight: 700; text-decoration: none; }
+    .payment-person { align-items: center; display: flex; gap: 10px; }
+    .payment-person > span { align-items: center; background: #e8efff; border-radius: 50%; color: #0756d8; display: flex; font-size: 8px; font-weight: 700; height: 29px; justify-content: center; width: 29px; }
+    .payment-person strong, .payment-person small { display: block; }
+    .payment-person strong { color: #111827; font-size: 11px; }
+    .payment-person small { color: #667085; font-size: 8px; margin-top: 2px; }
+    .paid-balance { color: #079455; }
+    .payment-completed-label { background: #dcfae6; border-radius: 3px; color: #067647; display: block; font-size: 7px; font-weight: 700; margin-top: 4px; padding: 2px 4px; text-transform: uppercase; width: fit-content; }
+    .balance-progress { background: #d9deea; display: block; height: 3px; margin-top: 6px; width: 74px; }
+    .balance-progress span { background: #0756d8; display: block; height: 100%; width: 62%; }
+    .payment-actions-menu { position: relative; width: fit-content; }
+    .payment-actions-menu summary { color: #667085; cursor: pointer; list-style: none; }
+    .payment-actions-menu summary::-webkit-details-marker { display: none; }
+    .payment-actions-menu form { background: #fff; border: 1px solid #d8ddea; border-radius: 7px; box-shadow: 0 9px 25px rgba(16,24,40,.14); padding: 5px; position: absolute; right: 0; top: 24px; width: 120px; z-index: 5; }
+    .payment-actions-menu button { background: transparent; border: 0; color: #d92d20; cursor: pointer; font-size: 10px; padding: 7px; text-align: left; width: 100%; }
+    .payments-empty { color: #667085; padding: 28px !important; text-align: center; }
+    .payments-pagination { align-items: center; background: #f1f3fd; border-radius: 0 0 11px 11px; display: flex; justify-content: space-between; min-height: 52px; padding: 0 18px; }
+    .payments-pagination > span { color: #475467; font-size: 9px; }
+    .payments-pagination nav { display: flex; gap: 5px; }
+    .payments-pagination nav a, .payments-pagination nav strong { align-items: center; border: 1px solid #cbd2e3; border-radius: 5px; display: flex; font-size: 10px; height: 27px; justify-content: center; text-decoration: none; width: 27px; }
+    .payments-pagination nav strong { background: #0756d8; border-color: #0756d8; color: #fff; }
+    .payments-pagination .lucide { height: 12px; width: 12px; }
+
+    @media (min-width: 901px) {
+        body.payments-page .sidebar { padding: 25px 11px 22px; width: 206px; }
+        body.payments-page .brand { margin: 0 15px 30px; }
+        body.payments-page .brand strong { font-size: 20px; }
+        body.payments-page .brand span { font-size: 11px; }
+        body.payments-page .nav-item { font-size: 14px; min-height: 42px; padding: 0 15px; }
+        body.payments-page .topbar { height: 54px; left: 206px; padding: 0 20px; }
+        body.payments-page .page-main { margin-left: 206px; padding: 76px 24px 36px; }
+        body.payments-page .content-wrap { max-width: none; }
+        body.payments-page .payments-heading h1 { font-size: 36px; }
+        body.payments-page .payments-heading p { font-size: 16px; }
+        body.payments-page .payments-primary-button { font-size: 14px; min-height: 46px; padding: 0 21px; }
+        body.payments-page .payments-filter-card { min-height: 102px; padding: 18px; }
+        body.payments-page .payment-filter-field label { font-size: 11px; }
+        body.payments-page .payment-filter-field select,
+        body.payments-page .payment-filter-field input { font-size: 15px; height: 44px; }
+        body.payments-page .payments-apply-button { font-size: 14px; height: 44px; }
+        body.payments-page .payments-total-card { min-height: 102px; padding: 18px; }
+        body.payments-page .payments-total-card span { font-size: 11px; }
+        body.payments-page .payments-total-card strong { font-size: 32px; }
+        body.payments-page .payments-total-card small { font-size: 11px; }
+        body.payments-page .payments-table th { font-size: 12px; padding: 17px 20px; }
+        body.payments-page .payments-table td { font-size: 14px; height: 74px; padding: 12px 20px; }
+        body.payments-page .payment-person > span { font-size: 10px; height: 34px; width: 34px; }
+        body.payments-page .payment-person strong { font-size: 14px; }
+        body.payments-page .payment-person small { font-size: 11px; }
+        body.payments-page .payment-completed-label { font-size: 9px; }
+        body.payments-page .payment-actions-menu form { top: 28px; width: 145px; }
+        body.payments-page .payment-actions-menu button { font-size: 13px; padding: 9px; }
+        body.payments-page .payments-pagination > span { font-size: 12px; }
+        body.payments-page .payments-pagination nav a,
+        body.payments-page .payments-pagination nav strong { font-size: 12px; height: 32px; width: 32px; }
+    }
+
+    @media (max-width: 900px) {
+        body.payments-page { background: #f8f9fd; padding-bottom: 66px; }
+        body.payments-page .mobile-header { height: 55px; padding: 0 13px; }
+        body.payments-page .mobile-brand { align-items: center; display: inline-flex; font-size: 14px; gap: 7px; }
+        body.payments-page .mobile-brand .lucide { height: 17px; width: 17px; }
+        body.payments-page .page-main { padding: 11px 10px 20px; }
+        body.payments-page .mobile-bottom-nav { height: 58px; }
+        .payments-desktop { display: none; }
+        .payments-mobile { display: block; margin: 0 auto; max-width: 520px; }
+        .mobile-payments-total { background: #0756d8; border-radius: 10px; color: #fff; min-height: 96px; padding: 15px; }
+        .mobile-payments-total span { display: block; font-size: 8px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+        .mobile-payments-total strong { display: block; font-size: 25px; letter-spacing: -.035em; margin: 4px 0 7px; }
+        .mobile-payments-total small { align-items: center; display: flex; font-size: 8px; font-weight: 700; gap: 4px; }
+        .mobile-payments-total small .lucide { height: 10px; width: 10px; }
+        .mobile-payment-counters { display: grid; gap: 9px; grid-template-columns: 1fr 1fr; margin: 9px 0 20px; }
+        .mobile-payment-counters article { background: #eef1ff; border: 1px solid #dce1f1; border-radius: 8px; min-height: 57px; padding: 11px; }
+        .mobile-payment-counters span, .mobile-payment-counters strong { display: block; }
+        .mobile-payment-counters span { color: #667085; font-size: 8px; }
+        .mobile-payment-counters strong { font-size: 14px; margin-top: 5px; }
+        .mobile-payment-counters article:last-child strong { color: #d92d20; }
+        .mobile-recent-payments > header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .mobile-recent-payments h2 { font-size: 14px; margin: 0; }
+        .mobile-recent-payments header a { align-items: center; color: #0756d8; display: flex; font-size: 8px; font-weight: 600; text-decoration: none; }
+        .mobile-recent-payments header .lucide { height: 10px; width: 10px; }
+        .mobile-payment-list { display: grid; gap: 7px; }
+        .mobile-payment-item { align-items: center; background: #fff; border: 1px solid #dce1eb; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,40,.04); display: grid; gap: 9px; grid-template-columns: auto 1fr auto; min-height: 55px; padding: 8px 10px; }
+        .mobile-payment-avatar { align-items: center; background: #e8efff; border-radius: 50%; color: #0756d8; display: flex; font-size: 8px; font-weight: 700; height: 31px; justify-content: center; width: 31px; }
+        .mobile-payment-item > div > strong, .mobile-payment-item > div > small { display: block; }
+        .mobile-payment-item > div > strong { font-size: 9px; }
+        .mobile-payment-item > div > small { color: #667085; font-size: 7px; margin-top: 3px; }
+        .mobile-payment-amount { text-align: right; }
+        .mobile-payment-amount strong { color: #111827; font-size: 15px !important; letter-spacing: -.02em; }
+        .mobile-payment-amount span { border-radius: 3px; display: inline-block; font-size: 6px; font-weight: 700; margin-top: 3px; padding: 2px 4px; text-transform: uppercase; }
+        .mobile-payment-amount span.completed { background: #dcfae6; color: #067647; }
+        .mobile-payment-amount span.review { background: #fff0d5; color: #b54708; }
+        .payments-fab { align-items: center; background: #0756d8; border-radius: 50%; bottom: 70px; box-shadow: 0 7px 18px rgba(7,86,216,.3); color: #fff; display: flex; height: 48px; justify-content: center; position: fixed; right: 13px; width: 48px; z-index: 45; }
+        .payments-fab .lucide { height: 22px; width: 22px; }
+    }
+</style>

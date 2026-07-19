@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 
 from django import forms
@@ -45,6 +46,23 @@ class PaymentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         qs = Loan.objects.filter(owner=user).order_by("borrower_name")
         self.fields["loan"].queryset = qs
+        self.fields["loan"].label = "Seleccionar préstamo"
+        self.fields["amount"].label = "Monto del pago"
+        self.fields["currency"].label = "Moneda del pago"
+        self.fields["payment_date"].label = "Fecha del pago"
+        self.fields["notes"].label = "Referencia / Nota"
+        self.fields["loan"].widget.attrs["autocomplete"] = "off"
+        self.fields["amount"].widget.attrs.update(
+            {
+                "placeholder": "0.00",
+                "inputmode": "decimal",
+            }
+        )
+        self.fields["notes"].widget.attrs["placeholder"] = (
+            "Ej. Pago cuota mensual, referencia bancaria..."
+        )
+        if not self.is_bound:
+            self.fields["payment_date"].initial = date.today()
         self.fields["loan"].label_from_instance = (
             lambda obj: (
                 f"{obj.borrower_name}  |  "

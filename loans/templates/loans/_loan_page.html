@@ -1,7 +1,6 @@
 <div class="page-heading">
     <div>
         <h1>Préstamos</h1>
-        <p>Gestiona y revisa el estado de tus préstamos.</p>
         <div class="breadcrumb">Panel&nbsp; / &nbsp;<strong>Listado de préstamos</strong></div>
     </div>
     <a class="button desktop-create" href="{% url 'loans:create' %}"><i data-lucide="plus" aria-hidden="true"></i> Nuevo préstamo</a>
@@ -18,6 +17,7 @@
         <a class="status-tab {% if not request.GET.status %}active{% endif %}" href="{% url 'loans:list' %}{% if request.GET.borrower_name %}?borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Todos</a>
         <a class="status-tab {% if request.GET.status == 'pending' %}active{% endif %}" href="?status=pending{% if request.GET.borrower_name %}&amp;borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Pendientes</a>
         <a class="status-tab {% if request.GET.status == 'paid' %}active{% endif %}" href="?status=paid{% if request.GET.borrower_name %}&amp;borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Pagados</a>
+        <a class="status-tab {% if request.GET.status == 'overdue' %}active{% endif %}" href="?status=overdue{% if request.GET.borrower_name %}&amp;borrower_name={{ request.GET.borrower_name|urlencode }}{% endif %}">Atrasados</a>
     </nav>
 
     <div class="toolbar-actions">
@@ -53,26 +53,31 @@
 <section class="loan-table-card" aria-label="Listado de préstamos">
     <table class="loan-table">
         <colgroup>
-            <col style="width: 27%">
-            <col style="width: 15%">
-            <col style="width: 15%">
-            <col style="width: 15%">
-            <col style="width: 14%">
-            <col style="width: 14%">
+            <col style="width: 11%">
+            <col style="width: 22%">
+            <col style="width: 13%">
+            <col style="width: 12%">
+            <col style="width: 13%">
+            <col style="width: 11%">
+            <col style="width: 12%">
+            <col style="width: 6%">
         </colgroup>
         <thead>
             <tr>
+                <th>Código</th>
                 <th>Persona</th>
                 <th>Monto</th>
                 <th>Inicio</th>
                 <th>Vencimiento</th>
                 <th>Estado</th>
+                <th>Saldo</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for loan in loans %}
                 <tr>
+                    <td><strong class="loan-code">LN-{{ loan.pk|stringformat:"04d" }}</strong></td>
                     <td>
                         <div class="borrower">
                             <span class="avatar borrower-avatar">{{ loan.borrower_name|slice:":2"|upper }}</span>
@@ -83,20 +88,48 @@
                             </span>
                         </div>
                     </td>
-                    <td class="money">${{ loan.amount }}</td>
+                    <td class="money">{{ loan.currency_symbol }}{{ loan.amount }}</td>
                     <td>{{ loan.loan_date|date:"d M Y" }}</td>
                     <td>{{ loan.due_date|date:"d M Y" }}</td>
-                    <td><span class="status status-{{ loan.status }}">{{ loan.get_status_display }}</span></td>
+                    <td>
+                        {% if loan.is_overdue %}
+                            <span class="status status-overdue">Atrasado</span>
+                        {% else %}
+                            <span class="status status-{{ loan.status }}">{{ loan.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="money balance {% if loan.is_overdue %}overdue-balance{% endif %}">{{ loan.currency_symbol }}{{ loan.remaining_balance }}</td>
                     <td class="actions">
                         <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i></a>
                         <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}" title="Eliminar"><i data-lucide="trash-2" aria-hidden="true"></i></a>
                     </td>
                 </tr>
             {% empty %}
-                <tr><td class="empty-state" colspan="6">No hay préstamos que mostrar con estos filtros.</td></tr>
+                <tr><td class="empty-state" colspan="8">No hay préstamos que mostrar con estos filtros.</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    {% if paginator.count %}
+        <footer class="loan-pagination">
+            <span>
+                Mostrando <strong>{{ page_obj.start_index }} a {{ page_obj.end_index }}</strong>
+                de <strong>{{ paginator.count }}</strong> préstamos
+            </span>
+            {% if paginator.num_pages > 1 %}
+                <nav aria-label="Paginación de préstamos">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Página anterior"><i data-lucide="chevron-left" aria-hidden="true"></i></a>
+                    {% endif %}
+                    {% for number in paginator.page_range %}
+                        <a class="{% if number == page_obj.number %}active{% endif %}" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ number }}">{{ number }}</a>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                        <a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" aria-label="Página siguiente"><i data-lucide="chevron-right" aria-hidden="true"></i></a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        </footer>
+    {% endif %}
 </section>
 
 <section class="loan-cards" aria-label="Listado de préstamos">
@@ -111,10 +144,14 @@
                         {% if loan.borrower_email %}{{ loan.borrower_email }}{% endif %}
                     </p>
                 </div>
-                <span class="status status-{{ loan.status }}">{{ loan.get_status_display|upper }}</span>
+                {% if loan.is_overdue %}
+                    <span class="status status-overdue">ATRASADO</span>
+                {% else %}
+                    <span class="status status-{{ loan.status }}">{{ loan.get_status_display|upper }}</span>
+                {% endif %}
             </div>
             <div class="loan-card-details">
-                <div><span>Monto total</span><strong class="money">${{ loan.amount }}</strong></div>
+                <div><span>Monto total</span><strong class="money">{{ loan.currency_symbol }}{{ loan.amount }}</strong></div>
                 <div><span>Vencimiento</span><strong>{{ loan.due_date|date:"d/m/Y" }}</strong></div>
             </div>
             <div class="loan-card-dates"><span>Inicio: {{ loan.loan_date|date:"d/m/Y" }}</span></div>
@@ -129,3 +166,180 @@
 </section>
 
 <a class="fab" href="{% url 'loans:create' %}" aria-label="Crear préstamo"><i data-lucide="plus" aria-hidden="true"></i></a>
+
+<style>
+    @media (min-width: 901px) {
+        body.loans-page .page-main {
+            padding: 88px 24px 44px;
+        }
+
+        body.loans-page .content-wrap {
+            max-width: none;
+        }
+
+        body.loans-page .page-heading,
+        body.loans-page .loan-toolbar,
+        body.loans-page .loan-table-card {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        body.loans-page .loan-table-card {
+            overflow-x: auto;
+        }
+
+        body.loans-page .page-heading {
+            margin-bottom: 30px;
+        }
+
+        body.loans-page .page-heading h1 {
+            font-size: 38px;
+            margin-bottom: 0;
+        }
+
+        body.loans-page .breadcrumb {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        body.loans-page .loan-toolbar {
+            min-height: 78px;
+            padding: 12px 18px;
+        }
+
+        body.loans-page .status-tab,
+        body.loans-page .outline-button {
+            font-size: 16px;
+        }
+
+        body.loans-page .status-tab {
+            padding: 12px 18px;
+        }
+
+        body.loans-page .loan-table th {
+            font-size: 14px;
+            padding: 20px 18px;
+        }
+
+        body.loans-page .loan-table {
+            min-width: 1050px;
+        }
+
+        body.loans-page .loan-table th:nth-child(3),
+        body.loans-page .loan-table td:nth-child(3) {
+            display: table-cell;
+        }
+
+        body.loans-page .loan-table td {
+            font-size: 15px;
+            padding: 20px 18px;
+        }
+
+        body.loans-page .borrower strong,
+        body.loans-page .loan-code,
+        body.loans-page .balance {
+            font-size: 16px;
+        }
+
+        body.loans-page .borrower small {
+            font-size: 12px;
+        }
+
+        body.loans-page .status {
+            font-size: 12px;
+        }
+
+        body.loans-page .modal-card {
+            width: min(760px, 100%);
+        }
+
+        body.loans-page .modal-header {
+            padding: 24px 28px;
+        }
+
+        body.loans-page .modal-header h1 {
+            font-size: 24px;
+        }
+
+        body.loans-page .modal-header p {
+            font-size: 14px;
+        }
+
+        body.loans-page .loan-form-body {
+            padding: 28px;
+        }
+
+        body.loans-page .loan-form-grid {
+            gap: 21px 18px;
+        }
+
+        body.loans-page .loan-form-grid label {
+            font-size: 14px;
+        }
+
+        body.loans-page .loan-form-grid input,
+        body.loans-page .loan-form-grid select {
+            font-size: 16px;
+            height: 48px;
+        }
+
+        body.loans-page .modal-footer {
+            padding: 18px 28px;
+        }
+
+        body.loans-page .modal-footer .cancel-link,
+        body.loans-page .modal-footer .primary {
+            font-size: 15px;
+        }
+    }
+
+    .loan-code {
+        color: var(--primary-strong);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .status-overdue {
+        background: var(--danger-soft);
+        color: var(--danger);
+    }
+
+    .overdue-balance {
+        color: var(--danger);
+        font-weight: 800;
+    }
+
+    .loan-pagination {
+        align-items: center;
+        background: #f1f3fc;
+        border-top: 1px solid var(--border);
+        color: #475467;
+        display: flex;
+        font-size: 13px;
+        justify-content: space-between;
+        padding: 14px 18px;
+    }
+
+    .loan-pagination nav {
+        display: flex;
+        gap: 7px;
+    }
+
+    .loan-pagination a {
+        align-items: center;
+        border: 1px solid #cbd2e3;
+        border-radius: 8px;
+        display: inline-flex;
+        height: 34px;
+        justify-content: center;
+        min-width: 34px;
+        padding: 0 8px;
+        text-decoration: none;
+    }
+
+    .loan-pagination a.active {
+        background: var(--primary-strong);
+        border-color: var(--primary-strong);
+        color: #fff;
+        font-weight: 700;
+    }
+</style>

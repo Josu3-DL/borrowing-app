@@ -8,7 +8,12 @@ from .models import Loan
 class LoanFilterForm(forms.Form):
     status = forms.ChoiceField(
         label="Estado",
-        choices=(("", "Todos"), *Loan.Status.choices),
+        choices=(
+            ("", "Todos"),
+            (Loan.Status.PENDING, "Pendientes"),
+            (Loan.Status.PAID, "Pagados"),
+            ("overdue", "Atrasados"),
+        ),
         required=False,
     )
     currency = forms.ChoiceField(

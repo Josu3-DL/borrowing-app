@@ -77,7 +77,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 AUTH_USER_MODEL = 'users.User'
 LOGIN_URL = 'users:login'
-LOGIN_REDIRECT_URL = 'users:profile'
+LOGIN_REDIRECT_URL = 'loans:dashboard'
 LOGOUT_REDIRECT_URL = 'users:login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
