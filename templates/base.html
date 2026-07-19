@@ -61,7 +61,9 @@
         <a href="{% url 'users:home' %}"><strong>Borrowing App</strong></a>
         {% if user.is_authenticated %}
             <div class="nav-links">
+                <a href="{% url 'loans:dashboard' %}">Dashboard</a>
                 <a href="{% url 'loans:list' %}">Préstamos</a>
+                <a href="{% url 'payments:list' %}">Pagos</a>
                 <a href="{% url 'users:profile' %}">Mi perfil</a>
                 <form method="post" action="{% url 'users:logout' %}">
                     {% csrf_token %}

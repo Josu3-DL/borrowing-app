@@ -9,6 +9,11 @@ class LoanFilterForm(forms.Form):
         choices=(("", "Todos"), *Loan.Status.choices),
         required=False,
     )
+    currency = forms.ChoiceField(
+        label="Moneda",
+        choices=(("", "Todas"), *Loan.Currency.choices),
+        required=False,
+    )
     borrower_name = forms.CharField(
         label="Nombre del prestatario",
         max_length=150,
@@ -29,12 +34,10 @@ class LoanFilterForm(forms.Form):
         cleaned_data = super().clean()
         date_from = cleaned_data.get("date_from")
         date_to = cleaned_data.get("date_to")
-
         if date_from and date_to and date_from > date_to:
             raise forms.ValidationError(
                 "La fecha inicial no puede ser posterior a la fecha final."
             )
-
         return cleaned_data
 
 
@@ -46,6 +49,7 @@ class LoanForm(forms.ModelForm):
             "borrower_phone",
             "borrower_email",
             "amount",
+            "currency",
             "loan_date",
             "due_date",
             "status",
