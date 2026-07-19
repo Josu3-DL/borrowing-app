@@ -51,6 +51,7 @@ def payment_create(request):
             "amount": str(l.amount),
             "balance": str(l.remaining_balance),
             "borrower": l.borrower_name,
+            "status": l.status,
         }
         for l in loans_qs
     }

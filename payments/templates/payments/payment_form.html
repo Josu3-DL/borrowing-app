@@ -26,6 +26,18 @@
         </ul>
     {% endif %}
 
+    <!-- Alerta: prestamo ya pagado -->
+    <div id="alert-paid" class="alert alert--error" style="display:none;">
+        <strong>&#9888; Prestamo ya pagado.</strong>
+        Este prestamo esta completamente saldado. No se pueden registrar mas abonos.
+    </div>
+
+    <!-- Alerta: monto excede saldo -->
+    <div id="alert-overflow" class="alert alert--warning" style="display:none;">
+        <strong>&#9888; Monto excede el saldo.</strong>
+        <span id="alert-overflow-msg"></span>
+    </div>
+
     <!-- Panel de informacion del prestamo y conversion -->
     <div id="info-panel" style="display:none; margin-bottom:1.5rem;">
         <div class="loan-summary" id="loan-info">
@@ -65,7 +77,7 @@
     </div>
 
     <div class="form-actions">
-        <button type="submit">Guardar abono</button>
+        <button type="submit" id="submit-btn">Guardar abono</button>
         <a href="{% url 'payments:list' %}">Cancelar</a>
     </div>
 </form>
@@ -79,6 +91,13 @@
     .loan-summary-value { font-size:1.25rem; font-weight:700; color:#182230; }
     .loan-summary-value--paid    { color:#067647; }
     .loan-summary-value--pending { color:#b54708; }
+
+    .alert { border-radius:.5rem; margin-bottom:1rem; padding:.9rem 1.2rem;
+             font-size:.92rem; line-height:1.5; }
+    .alert--error   { background:#fef3f2; border:1px solid #fda29b; color:#b42318; }
+    .alert--warning { background:#fffaeb; border:1px solid #fec84b; color:#b54708; }
+
+    button[disabled] { cursor:not-allowed; opacity:.5; }
 </style>
 
 <script>
@@ -86,11 +105,15 @@
     const RATE = {{ exchange_rate }};
     const LOAN_DATA = {{ loan_data_json|safe }};
 
-    const loanSel   = document.getElementById("id_loan");
-    const currSel   = document.getElementById("id_currency");
-    const amountIn  = document.getElementById("id_amount");
-    const infoPanel = document.getElementById("info-panel");
-    const convPanel = document.getElementById("conversion-panel");
+    const loanSel     = document.getElementById("id_loan");
+    const currSel     = document.getElementById("id_currency");
+    const amountIn    = document.getElementById("id_amount");
+    const infoPanel   = document.getElementById("info-panel");
+    const convPanel   = document.getElementById("conversion-panel");
+    const alertPaid   = document.getElementById("alert-paid");
+    const alertOflow  = document.getElementById("alert-overflow");
+    const alertOmsg   = document.getElementById("alert-overflow-msg");
+    const submitBtn   = document.getElementById("submit-btn");
 
     function fmt(sym, val) {
         return sym + parseFloat(val).toFixed(2);
@@ -103,6 +126,11 @@
         const payCur  = currSel ? currSel.value : "";
         const amount  = parseFloat(amountIn ? amountIn.value : 0) || 0;
 
+        // Ocultar alertas y habilitar boton por defecto
+        alertPaid.style.display  = "none";
+        alertOflow.style.display = "none";
+        submitBtn.disabled = false;
+
         if (!loanId || !LOAN_DATA[loanId]) {
             infoPanel.style.display = "none";
             return;
@@ -113,6 +141,12 @@
         const paySym  = getSymbol(payCur);
         const balance = parseFloat(loan.balance);
 
+        // Validacion JS: prestamo ya pagado
+        if (loan.status === "paid") {
+            alertPaid.style.display = "block";
+            submitBtn.disabled = true;
+        }
+
         // Mostrar info del prestamo
         document.getElementById("info-borrower").textContent      = loan.borrower;
         document.getElementById("info-loan-currency").textContent = loan.currency;
@@ -120,7 +154,7 @@
         document.getElementById("info-balance").textContent       = fmt(loanSym, balance);
         infoPanel.style.display = "block";
 
-        // Conversion si monedas difieren o si hay monto ingresado
+        // Conversion y validacion de monto
         if (payCur && amount > 0) {
             let equivInLoan = amount;
             if (payCur !== loan.currency) {
@@ -130,6 +164,21 @@
                     equivInLoan = amount * RATE;
                 }
             }
+
+            // Validacion JS: monto excede saldo
+            if (equivInLoan > balance + 0.005) {  // margen de 0.005 por redondeo
+                const maxInPayCur = payCur !== loan.currency
+                    ? (loan.currency === "USD" ? balance * RATE : balance / RATE)
+                    : balance;
+                alertOmsg.textContent =
+                    " El equivalente en " + loan.currency + " es " +
+                    loanSym + equivInLoan.toFixed(2) + ", pero el saldo es solo " +
+                    loanSym + balance.toFixed(2) + ". " +
+                    "Maximo permitido: " + paySym + maxInPayCur.toFixed(2) + " " + payCur + ".";
+                alertOflow.style.display = "block";
+                if (loan.status !== "paid") submitBtn.disabled = true;
+            }
+
             const afterBalance = Math.max(balance - equivInLoan, 0);
 
             document.getElementById("conv-pay-currency").textContent = payCur;
