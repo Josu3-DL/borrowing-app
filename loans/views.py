@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,12 +18,15 @@ def _loan_page_context(request, apply_filters=False):
 
     if apply_filters and filter_form.is_valid():
         status = filter_form.cleaned_data["status"]
+        currency = filter_form.cleaned_data["currency"]
         borrower_name = filter_form.cleaned_data["borrower_name"]
         date_from = filter_form.cleaned_data["date_from"]
         date_to = filter_form.cleaned_data["date_to"]
 
         if status:
             loans = loans.filter(status=status)
+        if currency:
+            loans = loans.filter(currency=currency)
         if borrower_name:
             loans = loans.filter(borrower_name__icontains=borrower_name)
         if date_from:
@@ -47,7 +52,7 @@ def loan_create(request):
         loan = form.save(commit=False)
         loan.owner = request.user
         loan.save()
-        messages.success(request, "Préstamo creado correctamente.")
+        messages.success(request, "Prestamo creado correctamente.")
         return redirect("loans:list")
 
     context = _loan_page_context(request)
@@ -62,7 +67,7 @@ def loan_update(request, pk):
     form = LoanForm(request.POST or None, instance=loan)
     if request.method == "POST" and form.is_valid():
         form.save()
-        messages.success(request, "Préstamo actualizado correctamente.")
+        messages.success(request, "Prestamo actualizado correctamente.")
         return redirect("loans:list")
 
     context = _loan_page_context(request)
@@ -76,7 +81,7 @@ def loan_delete(request, pk):
     loan = get_object_or_404(Loan, pk=pk, owner=request.user)
     if request.method == "POST":
         loan.delete()
-        messages.success(request, "Préstamo eliminado correctamente.")
+        messages.success(request, "Prestamo eliminado correctamente.")
         return redirect("loans:list")
 
     context = _loan_page_context(request)

@@ -1,5 +1,86 @@
 {% extends "base.html" %}
-{% block title %}Préstamos | Borrowing{% endblock %}
+{% block title %}Prestamos | Borrowing App{% endblock %}
 {% block content %}
-    {% include "loans/_loan_page.html" %}
+<div class="page-heading">
+    <div>
+        <h1>Prestamos</h1>
+        <p>Gestiona el dinero que has prestado a otras personas.</p>
+    </div>
+    <a class="button" href="{% url 'loans:create' %}">Nuevo prestamo</a>
+</div>
+
+<form class="filters" method="get" style="grid-template-columns: repeat(5, minmax(8rem,1fr)) auto;">
+    <div>
+        {{ filter_form.status.label_tag }}
+        {{ filter_form.status }}
+    </div>
+    <div>
+        {{ filter_form.currency.label_tag }}
+        {{ filter_form.currency }}
+    </div>
+    <div>
+        {{ filter_form.borrower_name.label_tag }}
+        {{ filter_form.borrower_name }}
+    </div>
+    <div>
+        {{ filter_form.date_from.label_tag }}
+        {{ filter_form.date_from }}
+    </div>
+    <div>
+        {{ filter_form.date_to.label_tag }}
+        {{ filter_form.date_to }}
+    </div>
+    <div class="filter-actions">
+        <button type="submit">Filtrar</button>
+        <a href="{% url 'loans:list' %}">Limpiar</a>
+    </div>
+    {{ filter_form.non_field_errors }}
+</form>
+
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Prestatario</th>
+                <th>Moneda</th>
+                <th>Monto</th>
+                <th>Saldo restante</th>
+                <th>Fecha prestamo</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+                <tr>
+                    <td>
+                        <strong>{{ loan.borrower_name }}</strong>
+                        {% if loan.borrower_phone %}<small>{{ loan.borrower_phone }}</small>{% endif %}
+                        {% if loan.borrower_email %}<small>{{ loan.borrower_email }}</small>{% endif %}
+                    </td>
+                    <td><span class="badge badge-{{ loan.currency|lower }}">{{ loan.currency }}</span></td>
+                    <td>{{ loan.currency_symbol }}{{ loan.amount }}</td>
+                    <td>{{ loan.currency_symbol }}{{ loan.remaining_balance }}</td>
+                    <td>{{ loan.loan_date }}</td>
+                    <td>{{ loan.due_date }}</td>
+                    <td><span class="status status-{{ loan.status }}">{{ loan.get_status_display }}</span></td>
+                    <td class="actions">
+                        <a href="{% url 'loans:update' loan.pk %}">Editar</a>
+                        <a href="{% url 'loans:delete' loan.pk %}">Eliminar</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="8">No hay prestamos que mostrar.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .badge { border-radius: 999px; display: inline-block; font-size: .8rem;
+             font-weight: 700; padding: .2rem .55rem; }
+    .badge-usd { background: #eff8ff; color: #175cd3; }
+    .badge-nio { background: #f5f3ff; color: #6941c6; }
+</style>
 {% endblock %}
