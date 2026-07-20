@@ -368,7 +368,8 @@
     .currency-switcher { align-items: center; background: #edf2ff; border: 1px solid #cdd9f7; border-radius: 9px; display: flex; padding: 3px; }
     .currency-switcher button { background: transparent; border: 0; border-radius: 6px; color: #42526e; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; min-height: 34px; padding: 0 10px; }
     .currency-switcher button.active { background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .14); color: #0756d8; }
-    .dashboard-primary-button { background: #0756d8; border: 1px solid #0756d8; color: #fff; }
+    .dashboard-primary-button { background: var(--action-primary); border: 1px solid var(--action-primary); color: var(--on-action-primary); }
+    .dashboard-primary-button:hover { background: var(--action-primary-hover); border-color: var(--action-primary-hover); }
     .dashboard-actions .lucide { height: 15px; width: 15px; }
 
     .dashboard-metrics { display: grid; gap: 14px; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 22px; }
@@ -506,7 +507,7 @@
         .activity-item strong { font-size: 9px; }
         .activity-item small { color: #667085; font-size: 8px; margin-top: 3px; }
         .activity-item time { color: #667085; font-size: 7px; }
-        .dashboard-fab { align-items: center; background: #0756d8; border-radius: 50%; bottom: 75px; box-shadow: 0 7px 18px rgba(7, 86, 216, .3); color: #fff; display: flex; height: 48px; justify-content: center; position: fixed; right: 14px; width: 48px; z-index: 45; }
+        .dashboard-fab { align-items: center; background: var(--action-primary); border-radius: 50%; bottom: 75px; box-shadow: 0 7px 18px var(--action-primary-shadow); color: var(--on-action-primary); display: flex; height: 48px; justify-content: center; position: fixed; right: 14px; width: 48px; z-index: 45; }
         .dashboard-fab .lucide { height: 22px; width: 22px; }
     }
 </style>

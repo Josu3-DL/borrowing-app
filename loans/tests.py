@@ -219,6 +219,11 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(response, 'aria-label="Cerrar notificación"')
         self.assertContains(response, 'role="status"')
         self.assertNotContains(response, 'class="flash-messages"')
+        self.assertContains(response, 'html[data-theme="dark"] .toast {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast.success {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast.warning {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast.error {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast-close:hover {')
 
     def test_list_only_shows_current_users_loans(self):
         own_loan = self.create_loan(borrower_name="Visible")

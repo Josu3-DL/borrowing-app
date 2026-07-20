@@ -27,8 +27,8 @@
     {% csrf_token %}
     {{ form.as_p }}
     <div class="form-actions">
-        <button type="submit">Guardar abono</button>
-        <a href="{% url 'loans:payments' loan.pk %}">Cancelar</a>
+        <button class="primary" type="submit">Guardar abono</button>
+        <a class="secondary-button" href="{% url 'loans:payments' loan.pk %}">Cancelar</a>
     </div>
 </form>
 
