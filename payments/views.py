@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -195,6 +196,30 @@ def payment_create(request):
         "exchange_rate": 37,
     })
     return render(request, "payments/payment_form.html", context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def loan_payments_json(request, loan_pk):
+    """Devuelve el historial de abonos de un préstamo como JSON."""
+    loan = get_object_or_404(Loan, pk=loan_pk, owner=request.user)
+    payments = list(loan.payments.all().order_by("-payment_date", "-created_at"))
+    return JsonResponse({
+        "loan_code": f"LN-{loan.pk:04d}",
+        "borrower_name": loan.borrower_name,
+        "amount": f"{loan.currency_symbol}{loan.amount:,.2f}",
+        "total_paid": f"{loan.currency_symbol}{loan.total_paid:,.2f}",
+        "remaining_balance": f"{loan.currency_symbol}{loan.remaining_balance:,.2f}",
+        "status": loan.get_status_display(),
+        "payments": [
+            {
+                "amount": f"{p.currency_symbol}{p.amount:,.2f}",
+                "payment_date": p.payment_date.strftime("%d %b %Y"),
+                "notes": p.notes if p.notes else "—",
+            }
+            for p in payments
+        ],
+    })
 
 
 @login_required
