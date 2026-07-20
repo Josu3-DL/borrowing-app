@@ -79,10 +79,14 @@ def _payment_list_context(request):
                 "payment": payment,
                 "initials": initials,
                 "amount": _format_money(payment.amount, payment.currency),
+                "amount_value": payment.amount,
+                "amount_currency": payment.currency,
                 "balance": _format_money(
                     payment.loan.remaining_balance,
                     payment.loan.currency,
                 ),
+                "balance_value": payment.loan.remaining_balance,
+                "balance_currency": payment.loan.currency,
                 "completed": payment.loan.status == Loan.Status.PAID,
             }
         )
@@ -129,6 +133,7 @@ def _payment_list_context(request):
         "page_obj": page_obj,
         "payment_rows": page_obj.object_list,
         "total_collected_month": _format_money(current_total),
+        "total_collected_month_value": current_total,
         "collected_change": _percent_change(current_total, previous_total),
         "pending_count": owner_loans.filter(
             status=Loan.Status.PENDING

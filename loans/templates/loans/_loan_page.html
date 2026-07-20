@@ -6,6 +6,13 @@
     <a class="button desktop-create" href="{% url 'loans:create' %}"><i data-lucide="plus" aria-hidden="true"></i> Nuevo préstamo</a>
 </div>
 
+<div class="module-currency-row">
+    <div class="module-currency-switcher" role="group" aria-label="Moneda mostrada">
+        <button type="button" data-currency="NIO">C$ Córdobas</button>
+        <button type="button" data-currency="USD">$ Dólares</button>
+    </div>
+</div>
+
 <div class="loan-toolbar">
     <form class="mobile-search" method="get">
         <i class="mobile-search-symbol" data-lucide="search" aria-hidden="true"></i>
@@ -88,7 +95,7 @@
                             </span>
                         </div>
                     </td>
-                    <td class="money">{{ loan.currency_symbol }}{{ loan.amount }}</td>
+                    <td class="money" data-money-value="{{ loan.amount }}" data-money-currency="{{ loan.currency }}">{{ loan.currency_symbol }}{{ loan.amount }}</td>
                     <td>{{ loan.loan_date|date:"d M Y" }}</td>
                     <td>{{ loan.due_date|date:"d M Y" }}</td>
                     <td>
@@ -98,7 +105,7 @@
                             <span class="status status-{{ loan.status }}">{{ loan.get_status_display }}</span>
                         {% endif %}
                     </td>
-                    <td class="money balance {% if loan.is_overdue %}overdue-balance{% endif %}">{{ loan.currency_symbol }}{{ loan.remaining_balance }}</td>
+                    <td class="money balance {% if loan.is_overdue %}overdue-balance{% endif %}" data-money-value="{{ loan.remaining_balance }}" data-money-currency="{{ loan.currency }}">{{ loan.currency_symbol }}{{ loan.remaining_balance }}</td>
                     <td class="actions">
                         <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i></a>
                         <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}" title="Eliminar"><i data-lucide="trash-2" aria-hidden="true"></i></a>
@@ -151,7 +158,7 @@
                 {% endif %}
             </div>
             <div class="loan-card-details">
-                <div><span>Monto total</span><strong class="money">{{ loan.currency_symbol }}{{ loan.amount }}</strong></div>
+                <div><span>Monto total</span><strong class="money" data-money-value="{{ loan.amount }}" data-money-currency="{{ loan.currency }}">{{ loan.currency_symbol }}{{ loan.amount }}</strong></div>
                 <div><span>Vencimiento</span><strong>{{ loan.due_date|date:"d/m/Y" }}</strong></div>
             </div>
             <div class="loan-card-dates"><span>Inicio: {{ loan.loan_date|date:"d/m/Y" }}</span></div>
@@ -168,6 +175,10 @@
 <a class="fab" href="{% url 'loans:create' %}" aria-label="Crear préstamo"><i data-lucide="plus" aria-hidden="true"></i></a>
 
 <style>
+    .module-currency-row { display: flex; justify-content: flex-end; margin: -18px 0 10px; }
+    .module-currency-switcher { align-items: center; background: #edf2ff; border: 1px solid #cdd9f7; border-radius: 9px; display: flex; padding: 3px; }
+    .module-currency-switcher button { background: transparent; border: 0; border-radius: 6px; color: #42526e; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; min-height: 34px; padding: 0 10px; }
+    .module-currency-switcher button.active { background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .14); color: #0756d8; }
     @media (min-width: 901px) {
         body.loans-page .page-main {
             padding: 88px 24px 44px;
@@ -343,3 +354,19 @@
         font-weight: 700;
     }
 </style>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const buttons = document.querySelectorAll(".module-currency-switcher [data-currency]");
+        const selectCurrency = (currency) => {
+            localStorage.setItem("borrowing-display-currency", currency);
+            document.querySelectorAll("[data-money-value]").forEach((element) => {
+                let amount = Number(element.dataset.moneyValue);
+                if (element.dataset.moneyCurrency !== currency) amount = currency === "USD" ? amount / 37 : amount * 37;
+                element.textContent = `${currency === "USD" ? "$" : "C$"}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            });
+            buttons.forEach((button) => button.classList.toggle("active", button.dataset.currency === currency));
+        };
+        buttons.forEach((button) => button.addEventListener("click", () => selectCurrency(button.dataset.currency)));
+        selectCurrency(localStorage.getItem("borrowing-display-currency") || "NIO");
+    });
+</script>

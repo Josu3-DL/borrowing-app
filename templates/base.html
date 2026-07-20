@@ -1187,6 +1187,17 @@
     });
 
     document.addEventListener("DOMContentLoaded", function () {
+        window.applyDisplayCurrency = function (currency) {
+            const rate = 37;
+            document.querySelectorAll("[data-money-value]").forEach(function (element) {
+                let amount = Number(element.dataset.moneyValue);
+                if (element.dataset.moneyCurrency !== currency) {
+                    amount = currency === "USD" ? amount / rate : amount * rate;
+                }
+                element.textContent = `${currency === "USD" ? "$" : "C$"}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            });
+        };
+        window.applyDisplayCurrency(localStorage.getItem("borrowing-display-currency") || "NIO");
         document.querySelectorAll("[data-phone-country-select]").forEach(
             initializePhoneCountrySelect
         );

@@ -9,6 +9,12 @@
         </a>
     </header>
 
+    <div class="module-currency-row">
+        <div class="module-currency-switcher" role="group" aria-label="Moneda mostrada">
+            <button type="button" data-currency="NIO">C$ Córdobas</button>
+            <button type="button" data-currency="USD">$ Dólares</button>
+        </div>
+    </div>
     <div class="payments-overview">
         <form class="payments-filter-card" method="get">
             <div class="payment-filter-field">
@@ -37,7 +43,7 @@
         <article class="payments-total-card">
             <div>
                 <span>Total cobrado (mes)</span>
-                <strong>{{ total_collected_month }}</strong>
+                <strong data-money-value="{{ total_collected_month_value }}" data-money-currency="USD">{{ total_collected_month }}</strong>
                 <small><i data-lucide="trending-up" aria-hidden="true"></i> {% if collected_change > 0 %}+{% endif %}{{ collected_change }}% vs mes anterior</small>
             </div>
             <i class="payments-total-art" data-lucide="banknote" aria-hidden="true"></i>
@@ -68,9 +74,9 @@
                                 </div>
                             </td>
                             <td>{{ row.payment.payment_date|date:"d M, Y" }}</td>
-                            <td><strong>{{ row.amount }}</strong></td>
+                            <td><strong data-money-value="{{ row.amount_value }}" data-money-currency="{{ row.amount_currency }}">{{ row.amount }}</strong></td>
                             <td>
-                                <strong class="{% if row.completed %}paid-balance{% endif %}">{{ row.balance }}</strong>
+                                <strong class="{% if row.completed %}paid-balance{% endif %}" data-money-value="{{ row.balance_value }}" data-money-currency="{{ row.balance_currency }}">{{ row.balance }}</strong>
                                 {% if row.completed %}
                                     <small class="payment-completed-label">Completado</small>
                                 {% else %}
@@ -112,7 +118,7 @@
     <h1 class="sr-only" id="mobile-payments-title">Pagos</h1>
     <article class="mobile-payments-total">
         <span>Total recaudado mes</span>
-        <strong>{{ total_collected_month }}</strong>
+        <strong data-money-value="{{ total_collected_month_value }}" data-money-currency="USD">{{ total_collected_month }}</strong>
         <small><i data-lucide="trending-up" aria-hidden="true"></i> {% if collected_change > 0 %}+{% endif %}{{ collected_change }}% vs mes anterior</small>
     </article>
 
@@ -135,7 +141,7 @@
                         <small>{{ row.payment.payment_date|date:"d M, Y" }}</small>
                     </div>
                     <div class="mobile-payment-amount">
-                        <strong>{{ row.amount }}</strong>
+                        <strong data-money-value="{{ row.amount_value }}" data-money-currency="{{ row.amount_currency }}">{{ row.amount }}</strong>
                         <span class="{% if row.completed %}completed{% else %}review{% endif %}">{% if row.completed %}Completado{% else %}Aplicado{% endif %}</span>
                     </div>
                 </article>
@@ -151,6 +157,10 @@
 </section>
 
 <style>
+    .module-currency-row { display: flex; justify-content: flex-end; margin: -10px 0 10px; }
+    .module-currency-switcher { align-items: center; background: #edf2ff; border: 1px solid #cdd9f7; border-radius: 9px; display: flex; padding: 3px; }
+    .module-currency-switcher button { background: transparent; border: 0; border-radius: 6px; color: #42526e; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; min-height: 34px; padding: 0 10px; }
+    .module-currency-switcher button.active { background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .14); color: #0756d8; }
     .payments-mobile { display: none; }
     .payments-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 25px; }
     .payments-heading h1 { font-size: 29px; letter-spacing: -.04em; margin: 0 0 3px; }
@@ -267,3 +277,19 @@
         .payments-fab .lucide { height: 22px; width: 22px; }
     }
 </style>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const buttons = document.querySelectorAll(".module-currency-switcher [data-currency]");
+        const selectCurrency = (currency) => {
+            localStorage.setItem("borrowing-display-currency", currency);
+            document.querySelectorAll("[data-money-value]").forEach((element) => {
+                let amount = Number(element.dataset.moneyValue);
+                if (element.dataset.moneyCurrency !== currency) amount = currency === "USD" ? amount / 37 : amount * 37;
+                element.textContent = `${currency === "USD" ? "$" : "C$"}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            });
+            buttons.forEach((button) => button.classList.toggle("active", button.dataset.currency === currency));
+        };
+        buttons.forEach((button) => button.addEventListener("click", () => selectCurrency(button.dataset.currency)));
+        selectCurrency(localStorage.getItem("borrowing-display-currency") || "NIO");
+    });
+</script>
