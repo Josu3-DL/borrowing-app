@@ -441,6 +441,10 @@
         body.dashboard-page .content-wrap { max-width: none; }
     }
 
+    @media (min-width: 901px) and (max-width: 1050px) {
+        .dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
     @media (max-width: 900px) {
         body.dashboard-page { background: #f7f8fc; padding-bottom: 72px; }
         body.dashboard-page .mobile-header { height: 60px; padding: 0 15px; }

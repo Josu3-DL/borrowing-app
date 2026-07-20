@@ -130,7 +130,11 @@ class AuthenticationTests(TestCase):
         self.assertContains(
             response,
             "color: var(--on-primary);",
-            count=2,
+            count=3,
+        )
+        self.assertContains(
+            response,
+            'html[data-theme="dark"] .status-tab.active { color: var(--on-primary); }',
         )
         self.assertContains(
             response,
