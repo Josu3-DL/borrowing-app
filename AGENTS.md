@@ -30,3 +30,12 @@ vencimientos y estados.
 3. Escribe en español todo el contenido visible de la página, incluidos textos,
    etiquetas, mensajes de validación, notificaciones y atributos de
    accesibilidad dirigidos a usuarios.
+
+## Nombrado de ramas
+
+No uses el prefijo `agent/` en los nombres de ramas. Anteponles directamente uno
+de los prefijos habituales según el tipo de cambio: `feature/` o `feat/` para
+funcionalidades, `fix/` o `bugfix/` para correcciones, `chore/` para tareas de
+mantenimiento, `docs/` para documentación, `refactor/` para refactorizaciones y
+`test/` para pruebas. Escribe la descripción en inglés y usa `kebab-case`. Por
+ejemplo: `feat/add-payment-reminders`.
