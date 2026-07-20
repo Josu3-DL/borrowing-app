@@ -204,14 +204,13 @@ class LoanViewTests(LoanTestMixin, TestCase):
             response,
             'html[data-theme="dark"] .chart-period-filter select {',
         )
+        self.assertContains(response, "data-chart-period-filter")
         self.assertContains(
             response,
-            'html[data-theme="dark"] .chart-period-filter button {',
+            'chartPeriodFilter.addEventListener("change"',
         )
-        self.assertContains(
-            response,
-            'html[data-theme="dark"] .chart-period-filter button:hover {',
-        )
+        self.assertContains(response, "chartPeriodFilter.form.requestSubmit()")
+        self.assertNotContains(response, '<button type="submit">Aplicar</button>')
 
     def test_dashboard_defaults_to_six_months_for_invalid_chart_period(self):
         self.client.force_login(self.user)
