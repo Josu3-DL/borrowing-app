@@ -171,6 +171,20 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(response, "Aún no hay préstamos registrados")
         self.assertContains(response, "No hay pagos pendientes")
 
+    def test_dashboard_metrics_use_three_columns_on_small_desktop_screens(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        self.assertContains(
+            response,
+            "@media (min-width: 901px) and (max-width: 1050px)",
+        )
+        self.assertContains(
+            response,
+            ".dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }",
+        )
+
     def test_dashboard_only_accepts_get(self):
         self.client.force_login(self.user)
 
@@ -188,6 +202,28 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertEqual(loan.owner, self.user)
         self.assertEqual(loan.borrower_name, "Mary Smith")
         self.assertNotEqual(loan.borrower_email, self.user.email)
+
+    def test_success_message_is_rendered_as_accessible_toast(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("loans:create"),
+            self.loan_data(),
+            follow=True,
+        )
+
+        self.assertContains(response, 'class="toast-region"')
+        self.assertContains(response, 'class="toast success"')
+        self.assertContains(response, "Prestamo creado correctamente.")
+        self.assertContains(response, 'data-toast-close')
+        self.assertContains(response, 'aria-label="Cerrar notificación"')
+        self.assertContains(response, 'role="status"')
+        self.assertNotContains(response, 'class="flash-messages"')
+        self.assertContains(response, 'html[data-theme="dark"] .toast {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast.success {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast.warning {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast.error {')
+        self.assertContains(response, 'html[data-theme="dark"] .toast-close:hover {')
 
     def test_list_only_shows_current_users_loans(self):
         own_loan = self.create_loan(borrower_name="Visible")
@@ -216,6 +252,24 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(
             response,
             'class="loan-actions-column" style="width: 11%"',
+        )
+
+    def test_list_includes_mid_size_overflow_rules(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:list"))
+
+        self.assertContains(
+            response,
+            "@media (min-width: 901px) and (max-width: 970px)",
+        )
+        self.assertContains(
+            response,
+            "body.loans-page .loan-table {\n            min-width: 0;",
+        )
+        self.assertContains(
+            response,
+            "body.loans-page .loan-table th:nth-child(4)",
         )
 
     def test_list_filters_loans_by_status(self):
