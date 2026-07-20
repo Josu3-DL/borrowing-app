@@ -218,6 +218,24 @@ class LoanViewTests(LoanTestMixin, TestCase):
             'class="loan-actions-column" style="width: 11%"',
         )
 
+    def test_list_includes_mid_size_overflow_rules(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:list"))
+
+        self.assertContains(
+            response,
+            "@media (min-width: 901px) and (max-width: 970px)",
+        )
+        self.assertContains(
+            response,
+            "body.loans-page .loan-table {\n            min-width: 0;",
+        )
+        self.assertContains(
+            response,
+            "body.loans-page .loan-table th:nth-child(4)",
+        )
+
     def test_list_filters_loans_by_status(self):
         pending = self.create_loan(
             borrower_name="Pending borrower",
