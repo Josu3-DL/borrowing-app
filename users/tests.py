@@ -96,6 +96,7 @@ class AuthenticationTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("loans:dashboard"))
+        content = response.content.decode()
 
         self.assertContains(response, '<button class="theme-toggle"', count=2)
         self.assertContains(response, 'aria-label="Activar modo oscuro"', count=2)
@@ -106,7 +107,32 @@ class AuthenticationTests(TestCase):
             count=2,
         )
         self.assertContains(response, 'localStorage.getItem("borrowing-theme")')
-        self.assertContains(response, 'localStorage.setItem(themeStorageKey, theme)')
+        self.assertContains(
+            response,
+            'window.matchMedia("(prefers-color-scheme: dark)")',
+            count=2,
+        )
+        self.assertContains(
+            response,
+            "if (persistPreference) localStorage.setItem(themeStorageKey, theme)",
+        )
+        self.assertContains(
+            response,
+            'setTheme(event.matches ? "dark" : "light", false)',
+        )
+        self.assertContains(response, "--on-primary: #0b1120")
+        self.assertContains(
+            response,
+            "color: var(--on-primary);",
+            count=3,
+        )
+        desktop_user_start = content.index('<div class="topbar-user">')
+        desktop_user_end = content.index("</div>", desktop_user_start)
+        desktop_theme_toggle = content.index(
+            '<button class="theme-toggle"',
+            desktop_user_start,
+        )
+        self.assertLess(desktop_theme_toggle, desktop_user_end)
 
     def test_email_cannot_be_used_to_log_in(self):
         response = self.client.post(

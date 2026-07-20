@@ -9,7 +9,12 @@
     <script>
         (function () {
             const savedTheme = localStorage.getItem("borrowing-theme");
-            if (savedTheme === "dark") {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const theme = savedTheme === "dark" || savedTheme === "light"
+                ? savedTheme
+                : (prefersDark ? "dark" : "light");
+
+            if (theme === "dark") {
                 document.documentElement.dataset.theme = "dark";
                 document.querySelector("[data-theme-color]").content = "#0b1120";
             }
@@ -21,7 +26,9 @@
             color-scheme: light;
             --primary: #2563eb;
             --primary-strong: #0756d8;
+            --primary-hover: #044bc0;
             --primary-soft: #e8efff;
+            --on-primary: #ffffff;
             --secondary: #f9fafb;
             --surface: #ffffff;
             --canvas: #f6f7fc;
@@ -46,7 +53,9 @@
             color-scheme: dark;
             --primary: #6f9fff;
             --primary-strong: #8bb4ff;
+            --primary-hover: #a6c2ff;
             --primary-soft: #1c3158;
+            --on-primary: #0b1120;
             --secondary: #182235;
             --surface: #111827;
             --canvas: #0b1120;
@@ -104,7 +113,7 @@
             text-decoration: none;
         }
         .nav-item:hover { background: var(--surface-hover); color: var(--primary-strong); }
-        .nav-item.active { background: var(--primary); color: #fff; font-weight: 700; }
+        .nav-item.active { background: var(--primary); color: var(--on-primary); font-weight: 700; }
         .nav-icon { font-size: 20px; line-height: 1; width: 20px; }
         .logout-form { border-top: 1px solid var(--border); margin-top: auto; padding-top: 22px; }
         .logout-button { background: none; border: 0; cursor: pointer; width: 100%; }
@@ -115,7 +124,7 @@
             border-bottom: 1px solid var(--border);
             display: flex;
             height: 64px;
-            justify-content: space-between;
+            justify-content: flex-end;
             left: 260px;
             padding: 0 28px 0 38px;
             position: fixed;
@@ -177,7 +186,7 @@
             background: var(--primary-strong);
             border: 0;
             border-radius: 11px;
-            color: #fff;
+            color: var(--on-primary);
             cursor: pointer;
             display: inline-flex;
             font-weight: 700;
@@ -187,7 +196,7 @@
             padding: 0 24px;
             text-decoration: none;
         }
-        .button:hover, button.primary:hover { background: #044bc0; }
+        .button:hover, button.primary:hover { background: var(--primary-hover); }
         .button:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
             outline: 3px solid #9bb8ff;
             outline-offset: 2px;
@@ -414,7 +423,7 @@
         .loan-table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
         .loan-table { border-collapse: collapse; table-layout: fixed; width: 100%; }
         .loan-table th {
-            background: #f1f3fc;
+            background: var(--surface-muted);
             color: #344054;
             font-size: 13px;
             font-weight: 700;
@@ -710,7 +719,6 @@
             border-color: var(--border);
         }
         html[data-theme="dark"] .brand span,
-        html[data-theme="dark"] .nav-item,
         html[data-theme="dark"] .status-tab,
         html[data-theme="dark"] .outline-button,
         html[data-theme="dark"] .field small,
@@ -861,7 +869,7 @@
             .mobile-search { position: relative; }
             .status-tabs { gap: 7px; overflow-x: auto; scrollbar-width: none; }
             .status-tab { background: var(--primary-soft); flex: 0 0 auto; font-size: 12px; padding: 7px 15px; }
-            .status-tab.active { background: var(--primary); color: #fff; }
+            .status-tab.active { background: var(--primary); color: var(--on-primary); }
             .toolbar-actions { display: none; }
             .loan-table-card { display: none; }
             .loan-cards { display: grid; gap: 14px; }
@@ -996,16 +1004,16 @@
         </aside>
 
         <header class="topbar">
-            <button class="theme-toggle"
-                    type="button"
-                    data-theme-toggle
-                    aria-label="Activar modo oscuro"
-                    aria-pressed="false"
-                    title="Activar modo oscuro">
-                <i data-theme-icon data-lucide="moon" aria-hidden="true"></i>
-                <span class="sr-only" data-theme-label>Activar modo oscuro</span>
-            </button>
             <div class="topbar-user">
+                <button class="theme-toggle"
+                        type="button"
+                        data-theme-toggle
+                        aria-label="Activar modo oscuro"
+                        aria-pressed="false"
+                        title="Activar modo oscuro">
+                    <i data-theme-icon data-lucide="moon" aria-hidden="true"></i>
+                    <span class="sr-only" data-theme-label>Activar modo oscuro</span>
+                </button>
                 <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
                 <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
             </div>
@@ -1068,11 +1076,11 @@
         });
     }
 
-    function setTheme(theme) {
+    function setTheme(theme, persistPreference = true) {
         if (theme === "dark") document.documentElement.dataset.theme = "dark";
         else delete document.documentElement.dataset.theme;
 
-        localStorage.setItem(themeStorageKey, theme);
+        if (persistPreference) localStorage.setItem(themeStorageKey, theme);
         document.querySelector("[data-theme-color]").content =
             theme === "dark" ? "#0b1120" : "#f6f7fc";
         updateThemeControls(theme);
@@ -1080,6 +1088,12 @@
     }
 
     updateThemeControls(getCurrentTheme());
+
+    const systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    systemThemeQuery.addEventListener("change", function (event) {
+        if (localStorage.getItem(themeStorageKey)) return;
+        setTheme(event.matches ? "dark" : "light", false);
+    });
 
     document.addEventListener("click", function (event) {
         const themeToggle = event.target.closest("[data-theme-toggle]");
