@@ -213,6 +213,10 @@ class LoanViewTests(LoanTestMixin, TestCase):
             response,
             "body.loans-page .loan-table-scroll-content {",
         )
+        self.assertContains(
+            response,
+            'class="loan-actions-column" style="width: 11%"',
+        )
 
     def test_list_filters_loans_by_status(self):
         pending = self.create_loan(
