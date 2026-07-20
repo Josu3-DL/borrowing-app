@@ -171,6 +171,20 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(response, "Aún no hay préstamos registrados")
         self.assertContains(response, "No hay pagos pendientes")
 
+    def test_dashboard_metrics_use_three_columns_on_small_desktop_screens(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        self.assertContains(
+            response,
+            "@media (min-width: 901px) and (max-width: 1050px)",
+        )
+        self.assertContains(
+            response,
+            ".dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }",
+        )
+
     def test_dashboard_only_accepts_get(self):
         self.client.force_login(self.user)
 
