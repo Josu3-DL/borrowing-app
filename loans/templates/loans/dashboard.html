@@ -75,7 +75,8 @@
             </header>
             <div class="desktop-bar-chart" aria-label="Préstamos emitidos durante los últimos seis meses">
                 {% for month in month_series %}
-                    <div class="desktop-bar-column">
+                    <div class="desktop-bar-column" style="--bar-height: {{ month.lent_height }}%" tabindex="0" aria-label="{{ month.label }}: {{ month.loan_count }} préstamo{{ month.loan_count|pluralize }}">
+                        <span class="chart-tooltip" role="tooltip">{{ month.label }}: {{ month.loan_count }} préstamo{{ month.loan_count|pluralize }}</span>
                         <span class="desktop-bar" style="height: {{ month.lent_height }}%"></span>
                         <small>{{ month.label }}</small>
                     </div>
@@ -99,6 +100,15 @@
                     <line x1="0" x2="580" y1="210" y2="210" stroke="#e7eaf2"/>
                     <polygon points="{{ recovery_area_points }}" fill="url(#recovery-area)"/>
                     <polyline data-recovery-line points="{{ recovery_points }}" fill="none" stroke="#0756d8" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+                    {% for month in month_series %}
+                        <g class="line-chart-point" tabindex="0" aria-label="{{ month.label }}: {{ month.recovered_amount }} recuperados">
+                            <circle cx="{{ month.recovery_x }}" cy="{{ month.recovery_y }}" r="5"/>
+                            <g class="line-chart-tooltip" transform="translate({{ month.recovery_tooltip_x }} {{ month.recovery_tooltip_y }})">
+                                <rect x="-68" y="-25" width="136" height="24" rx="6"/>
+                                <text x="0" y="-9" text-anchor="middle">{{ month.label }}: {{ month.recovered_amount }}</text>
+                            </g>
+                        </g>
+                    {% endfor %}
                 </svg>
                 <div class="line-chart-labels">
                     {% for month in month_series %}<small>{{ month.label }}</small>{% endfor %}
@@ -402,11 +412,23 @@
     .panel-heading-bordered { border-bottom: 1px solid #d9deea; padding: 0 19px; }
     .chart-legend i { background: #0756d8; border-radius: 50%; display: inline-block; height: 7px; width: 7px; }
     .desktop-bar-chart { align-items: end; border-bottom: 1px solid #e8ebf2; display: flex; gap: 18px; height: 192px; justify-content: space-around; padding: 12px 15px 0; }
-    .desktop-bar-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; }
+    .desktop-bar-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; position: relative; }
     .desktop-bar { background: linear-gradient(#7ca7ff, #0756d8); border-radius: 6px 6px 0 0; display: block; max-width: 34px; min-height: 8px; width: 55%; }
     .desktop-bar-column small { color: #667085; font-size: 9px; margin: 8px 0 5px; }
+    .chart-tooltip { background: #101828; border-radius: 6px; bottom: calc(var(--bar-height, 0%) + 34px); color: #fff; font-size: 10px; font-weight: 600; left: 50%; opacity: 0; padding: 6px 8px; pointer-events: none; position: absolute; transform: translate(-50%, 4px); transition: opacity .15s ease, transform .15s ease; white-space: nowrap; z-index: 2; }
+    .desktop-bar-column:hover .chart-tooltip,
+    .desktop-bar-column:focus .chart-tooltip { opacity: 1; transform: translate(-50%, 0); }
+    .desktop-bar-column:focus { outline: 2px solid #9bb8ff; outline-offset: 2px; }
     .desktop-line-chart { height: 200px; position: relative; }
     .desktop-line-chart svg { height: 172px; overflow: visible; width: 100%; }
+    .line-chart-point { color: #0756d8; outline: none; }
+    .line-chart-point > circle { fill: #fff; stroke: currentColor; stroke-width: 3; }
+    .line-chart-tooltip { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+    .line-chart-tooltip rect { fill: #101828; }
+    .line-chart-tooltip text { fill: #fff; font-size: 10px; font-weight: 600; }
+    .line-chart-point:hover .line-chart-tooltip,
+    .line-chart-point:focus .line-chart-tooltip { opacity: 1; }
+    .line-chart-point:focus > circle { stroke-width: 5; }
     .line-chart-labels { display: flex; justify-content: space-between; }
     .line-chart-labels small { color: #667085; font-size: 9px; }
 
