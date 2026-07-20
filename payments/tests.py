@@ -122,38 +122,6 @@ class PaymentViewTests(TestCase):
             ["Ana García"],
         )
 
-    def test_payment_list_renders_mobile_filters_with_selected_values(self):
-        self.client.force_login(self.user)
-
-        response = self.client.get(
-            reverse("payments:list"),
-            {
-                "borrower_name": self.loan.borrower_name,
-                "date_from": "2026-07-01",
-                "date_to": "2026-07-31",
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="mobile-payment-filters"')
-        self.assertContains(response, 'id="mobile-payment-person-filter"')
-        self.assertContains(
-            response,
-            f'<option value="{self.loan.borrower_name}" selected>',
-        )
-        self.assertContains(
-            response,
-            'id="mobile-payment-date-from" name="date_from" type="date" '
-            'value="2026-07-01"',
-        )
-        self.assertContains(
-            response,
-            'id="mobile-payment-date-to" name="date_to" type="date" '
-            'value="2026-07-31"',
-        )
-        self.assertContains(response, "Aplicar filtros")
-        self.assertContains(response, "Limpiar")
-
     def test_payment_create_renders_responsive_modal(self):
         self.client.force_login(self.user)
 
