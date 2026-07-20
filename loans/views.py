@@ -84,17 +84,31 @@ def _chart_month_count(raw_value):
     return month_count if month_count in CHART_MONTH_OPTIONS else 6
 
 
-def _chart_points(values, width=580, height=180, top=14):
+def _chart_coordinates(values, width=580, height=180, top=14):
     if not values:
-        return ""
+        return []
     maximum = max(values) or Decimal("1")
     step = width / max(len(values) - 1, 1)
-    points = []
+    coordinates = []
     for index, value in enumerate(values):
         x = index * step
         y = top + (height - (Decimal(value) / maximum * height))
-        points.append(f"{x:.1f},{float(y):.1f}")
-    return " ".join(points)
+        coordinates.append(
+            {
+                "x": f"{x:.1f}",
+                "y": f"{float(y):.1f}",
+                "tooltip_x": f"{min(max(x, 70), width - 70):.1f}",
+                "tooltip_y": f"{max(float(y) - 10, 30):.1f}",
+            }
+        )
+    return coordinates
+
+
+def _chart_points(values):
+    return " ".join(
+        f'{coordinate["x"]},{coordinate["y"]}'
+        for coordinate in _chart_coordinates(values)
+    )
 
 
 @login_required
@@ -128,15 +142,44 @@ def dashboard(request):
         payments_this_month = sum((_to_currency(payment.amount, payment.currency, currency) for payment in payments if payment.payment_date >= month_start), Decimal("0"))
         loan_month_values, payment_month_values, month_series = [], [], []
         for year, month in months:
-            lent = sum((_to_currency(loan.amount, loan.currency, currency) for loan in loans if loan.loan_date.year == year and loan.loan_date.month == month), Decimal("0"))
+            monthly_loans = [
+                loan
+                for loan in loans
+                if loan.loan_date.year == year and loan.loan_date.month == month
+            ]
+            lent = sum(
+                (
+                    _to_currency(loan.amount, loan.currency, currency)
+                    for loan in monthly_loans
+                ),
+                Decimal("0"),
+            )
             recovered = sum((_to_currency(payment.amount, payment.currency, currency) for payment in payments if payment.payment_date.year == year and payment.payment_date.month == month), Decimal("0"))
             loan_month_values.append(lent)
             payment_month_values.append(recovered)
-            month_series.append({"label": SPANISH_MONTHS[month], "lent_height": 8})
+            month_series.append(
+                {
+                    "label": SPANISH_MONTHS[month],
+                    "lent_height": 8,
+                    "loan_count": len(monthly_loans),
+                    "recovered_amount": _format_money(recovered, currency),
+                }
+            )
 
         max_monthly_lent = max(loan_month_values) if loan_month_values else Decimal("0")
         for item, lent in zip(month_series, loan_month_values):
             item["lent_height"] = max(8, int(lent / max_monthly_lent * 100)) if max_monthly_lent else 8
+
+        for item, coordinate in zip(
+            month_series,
+            _chart_coordinates(payment_month_values),
+        ):
+            item.update(
+                recovery_x=coordinate["x"],
+                recovery_y=coordinate["y"],
+                recovery_tooltip_x=coordinate["tooltip_x"],
+                recovery_tooltip_y=coordinate["tooltip_y"],
+            )
 
         upcoming = []
         for loan in pending_loans:

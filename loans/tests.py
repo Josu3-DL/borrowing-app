@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from payments.models import Payment
 
@@ -222,6 +223,32 @@ class LoanViewTests(LoanTestMixin, TestCase):
 
         self.assertEqual(response.context["chart_month_count"], 6)
         self.assertEqual(len(response.context["month_series"]), 6)
+
+    def test_dashboard_charts_render_hover_and_focus_details(self):
+        loan = self.create_loan(
+            borrower_name="Chart borrower",
+            amount="100.00",
+            currency=Loan.Currency.USD,
+            loan_date=timezone.localdate().isoformat(),
+            due_date=(timezone.localdate() + timedelta(days=30)).isoformat(),
+        )
+        Payment.objects.create(
+            loan=loan,
+            amount=Decimal("25.00"),
+            currency=Payment.Currency.USD,
+            payment_date=timezone.localdate(),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        current_month = response.context["month_series"][-1]
+        self.assertEqual(current_month["loan_count"], 1)
+        self.assertEqual(current_month["recovered_amount"], "C$925.00")
+        self.assertContains(response, 'class="chart-tooltip" role="tooltip"')
+        self.assertContains(response, 'class="line-chart-point" tabindex="0"')
+        self.assertContains(response, "1 préstamo")
+        self.assertContains(response, "C$925.00 recuperados")
 
     def test_dashboard_only_accepts_get(self):
         self.client.force_login(self.user)
