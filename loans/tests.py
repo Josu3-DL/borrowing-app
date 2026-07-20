@@ -189,6 +189,23 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertEqual(loan.borrower_name, "Mary Smith")
         self.assertNotEqual(loan.borrower_email, self.user.email)
 
+    def test_success_message_is_rendered_as_accessible_toast(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("loans:create"),
+            self.loan_data(),
+            follow=True,
+        )
+
+        self.assertContains(response, 'class="toast-region"')
+        self.assertContains(response, 'class="toast success"')
+        self.assertContains(response, "Prestamo creado correctamente.")
+        self.assertContains(response, 'data-toast-close')
+        self.assertContains(response, 'aria-label="Cerrar notificación"')
+        self.assertContains(response, 'role="status"')
+        self.assertNotContains(response, 'class="flash-messages"')
+
     def test_list_only_shows_current_users_loans(self):
         own_loan = self.create_loan(borrower_name="Visible")
         other_loan = self.create_loan(
