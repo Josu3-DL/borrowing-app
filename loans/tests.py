@@ -186,6 +186,44 @@ class LoanViewTests(LoanTestMixin, TestCase):
             ".dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }",
         )
 
+    def test_dashboard_filters_charts_by_supported_month_period(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:dashboard"),
+            {"chart_months": "3"},
+        )
+
+        self.assertEqual(response.context["chart_month_count"], 3)
+        self.assertEqual(len(response.context["month_series"]), 3)
+        self.assertContains(response, '<option value="3" selected>')
+        self.assertContains(
+            response,
+            'aria-label="Préstamos emitidos durante los últimos 3 meses"',
+        )
+        self.assertContains(
+            response,
+            'html[data-theme="dark"] .chart-period-filter select {',
+        )
+        self.assertContains(response, "data-chart-period-filter")
+        self.assertContains(
+            response,
+            'chartPeriodFilter.addEventListener("change"',
+        )
+        self.assertContains(response, "chartPeriodFilter.form.requestSubmit()")
+        self.assertNotContains(response, '<button type="submit">Aplicar</button>')
+
+    def test_dashboard_defaults_to_six_months_for_invalid_chart_period(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:dashboard"),
+            {"chart_months": "24"},
+        )
+
+        self.assertEqual(response.context["chart_month_count"], 6)
+        self.assertEqual(len(response.context["month_series"]), 6)
+
     def test_dashboard_charts_render_hover_and_focus_details(self):
         loan = self.create_loan(
             borrower_name="Chart borrower",

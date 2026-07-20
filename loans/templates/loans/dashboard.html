@@ -71,9 +71,16 @@
         <article class="dashboard-panel chart-panel">
             <header class="panel-heading">
                 <h2>Préstamos por mes</h2>
-                <span>Últimos 6 meses <i data-lucide="chevron-down" aria-hidden="true"></i></span>
+                <form class="chart-period-filter" method="get">
+                    <label class="sr-only" for="chart-months">Periodo de las gráficas</label>
+                    <select id="chart-months" name="chart_months" data-chart-period-filter>
+                        <option value="3" {% if chart_month_count == 3 %}selected{% endif %}>Últimos 3 meses</option>
+                        <option value="6" {% if chart_month_count == 6 %}selected{% endif %}>Últimos 6 meses</option>
+                        <option value="12" {% if chart_month_count == 12 %}selected{% endif %}>Últimos 12 meses</option>
+                    </select>
+                </form>
             </header>
-            <div class="desktop-bar-chart" aria-label="Préstamos emitidos durante los últimos seis meses">
+            <div class="desktop-bar-chart" aria-label="Préstamos emitidos durante los últimos {{ chart_month_count }} meses">
                 {% for month in month_series %}
                     <div class="desktop-bar-column" style="--bar-height: {{ month.lent_height }}%" tabindex="0" aria-label="{{ month.label }}: {{ month.loan_count }} préstamo{{ month.loan_count|pluralize }}">
                         <span class="chart-tooltip" role="tooltip">{{ month.label }}: {{ month.loan_count }} préstamo{{ month.loan_count|pluralize }}</span>
@@ -90,7 +97,7 @@
                 <span class="chart-legend"><i></i> Ingresos</span>
             </header>
             <div class="desktop-line-chart">
-                <svg viewBox="0 0 580 220" role="img" aria-label="Dinero recuperado durante los últimos seis meses">
+                <svg viewBox="0 0 580 220" role="img" aria-label="Dinero recuperado durante los últimos {{ chart_month_count }} meses">
                     <defs>
                         <linearGradient id="recovery-area" x1="0" x2="0" y1="0" y2="1">
                             <stop offset="0%" stop-color="#0756d8" stop-opacity=".16"/>
@@ -250,7 +257,12 @@
     (() => {
         const currencyData = JSON.parse(document.getElementById("dashboard-currency-data").textContent);
         const buttons = document.querySelectorAll("[data-currency]");
+        const chartPeriodFilter = document.querySelector("[data-chart-period-filter]");
         const updateUrl = (id) => `/loans/${id}/edit/`;
+
+        chartPeriodFilter.addEventListener("change", () => {
+            chartPeriodFilter.form.requestSubmit();
+        });
 
         const appendText = (parent, tag, value, className = "") => {
             const node = document.createElement(tag);
@@ -410,6 +422,13 @@
     .panel-heading > span .lucide { height: 12px; width: 12px; }
     .panel-heading a { color: #0756d8; font-size: 11px; font-weight: 600; text-decoration: none; }
     .panel-heading-bordered { border-bottom: 1px solid #d9deea; padding: 0 19px; }
+    .chart-period-filter { align-items: center; display: flex; gap: 6px; }
+    .chart-period-filter select { background: #fbfcff; border: 1px solid #cbd2e3; border-radius: 7px; color: #475467; font-size: 10px; height: 32px; padding: 0 7px; }
+    html[data-theme="dark"] .chart-period-filter select {
+        background: var(--field-background);
+        border-color: var(--border);
+        color: var(--neutral);
+    }
     .chart-legend i { background: #0756d8; border-radius: 50%; display: inline-block; height: 7px; width: 7px; }
     .desktop-bar-chart { align-items: end; border-bottom: 1px solid #e8ebf2; display: flex; gap: 18px; height: 192px; justify-content: space-around; padding: 12px 15px 0; }
     .desktop-bar-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; position: relative; }
