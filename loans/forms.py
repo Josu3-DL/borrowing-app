@@ -79,6 +79,10 @@ class LoanForm(forms.ModelForm):
             "amount": forms.NumberInput(
                 attrs={"placeholder": "0.00", "min": "0.01", "step": "0.01"}
             ),
-            "loan_date": forms.DateInput(attrs={"type": "date"}),
-            "due_date": forms.DateInput(attrs={"type": "date"}),
+            "loan_date": forms.DateInput(
+                attrs={"type": "date"}, format="%Y-%m-%d"
+            ),
+            "due_date": forms.DateInput(
+                attrs={"type": "date"}, format="%Y-%m-%d"
+            ),
         }

@@ -44,7 +44,9 @@ class PaymentFilterForm(forms.Form):
 class PaymentForm(forms.ModelForm):
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        qs = Loan.objects.filter(owner=user).order_by("borrower_name")
+        qs = Loan.objects.filter(
+            owner=user, status=Loan.Status.PENDING
+        ).order_by("borrower_name")
         self.fields["loan"].queryset = qs
         self.fields["loan"].label = "Seleccionar préstamo"
         self.fields["amount"].label = "Monto del pago"
@@ -76,7 +78,9 @@ class PaymentForm(forms.ModelForm):
         model = Payment
         fields = ("loan", "amount", "currency", "payment_date", "notes")
         widgets = {
-            "payment_date": forms.DateInput(attrs={"type": "date"}),
+            "payment_date": forms.DateInput(
+                attrs={"type": "date"}, format="%Y-%m-%d"
+            ),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
