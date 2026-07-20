@@ -139,14 +139,14 @@ def dashboard(request):
                 due_label, due_state = "Vence mañana", "soon"
             else:
                 due_label, due_state = f"En {days_until} días", "upcoming"
-            upcoming.append({"id": loan.pk, "borrower_name": loan.borrower_name, "amount": _format_money(_to_currency(loan.remaining_balance, loan.currency, currency), currency), "day": f"{loan.due_date.day:02d}", "month": SPANISH_MONTHS[loan.due_date.month].upper(), "due_label": due_label, "due_state": due_state})
+            upcoming.append({"id": loan.pk, "borrower_name": loan.borrower_name, "amount": _format_money(loan.remaining_balance, loan.currency), "day": f"{loan.due_date.day:02d}", "month": SPANISH_MONTHS[loan.due_date.month].upper(), "due_label": due_label, "due_state": due_state})
 
-        recent = [{"borrower_name": loan.borrower_name, "loan_date": loan.loan_date.strftime("%d %b %Y"), "amount": _format_money(_to_currency(loan.amount, loan.currency, currency), currency), "status": loan.status, "status_display": loan.get_status_display()} for loan in loans[:5]]
+        recent = [{"borrower_name": loan.borrower_name, "loan_date": loan.loan_date.strftime("%d %b %Y"), "amount": _format_money(loan.amount, loan.currency), "status": loan.status, "status_display": loan.get_status_display()} for loan in loans[:5]]
         activity = []
         for loan in loans[:5]:
-            activity.append({"created_at": loan.created_at, "kind": "loan", "icon": "plus", "title": "Nuevo préstamo creado", "detail": f"{loan.borrower_name} · {_format_money(_to_currency(loan.amount, loan.currency, currency), currency)}"})
+            activity.append({"created_at": loan.created_at, "kind": "loan", "icon": "plus", "title": "Nuevo préstamo creado", "detail": f"{loan.borrower_name} · {_format_money(loan.amount, loan.currency)}"})
         for payment in payments[:5]:
-            activity.append({"created_at": payment.created_at, "kind": "payment", "icon": "banknote", "title": "Pago recibido", "detail": f"{payment.loan.borrower_name} · {_format_money(_to_currency(payment.amount, payment.currency, currency), currency)}"})
+            activity.append({"created_at": payment.created_at, "kind": "payment", "icon": "banknote", "title": "Pago recibido", "detail": f"{payment.loan.borrower_name} · {_format_money(payment.amount, payment.currency)}"})
         activity.sort(key=lambda item: item["created_at"], reverse=True)
         return {"total_lent": _format_money(total_lent, currency), "total_recovered": _format_money(total_recovered, currency), "total_pending": _format_money(total_pending, currency), "payments_this_month": _format_money(payments_this_month, currency), "lent_change": _percent_change(loan_month_values[-1], loan_month_values[-2]), "recovered_change": _percent_change(payment_month_values[-1], payment_month_values[-2]), "month_series": month_series, "recovery_points": _chart_points(payment_month_values), "recovery_area_points": f"0,210 {_chart_points(payment_month_values)} 580,210", "recent_loans": recent, "upcoming_loans": upcoming, "recent_activity": activity[:5]}
 

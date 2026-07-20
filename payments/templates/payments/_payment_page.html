@@ -1,3 +1,4 @@
+{% load l10n %}
 <section class="payments-desktop">
     <header class="payments-heading">
         <div>
@@ -43,7 +44,7 @@
         <article class="payments-total-card">
             <div>
                 <span>Total cobrado (mes)</span>
-                <strong data-money-value="{{ total_collected_month_value }}" data-money-currency="USD">{{ total_collected_month }}</strong>
+                <strong data-money-value="{{ total_collected_month_value|unlocalize }}" data-money-currency="USD">{{ total_collected_month }}</strong>
                 <small><i data-lucide="trending-up" aria-hidden="true"></i> {% if collected_change > 0 %}+{% endif %}{{ collected_change }}% vs mes anterior</small>
             </div>
             <i class="payments-total-art" data-lucide="banknote" aria-hidden="true"></i>
@@ -74,9 +75,9 @@
                                 </div>
                             </td>
                             <td>{{ row.payment.payment_date|date:"d M, Y" }}</td>
-                            <td><strong data-money-value="{{ row.amount_value }}" data-money-currency="{{ row.amount_currency }}">{{ row.amount }}</strong></td>
+                            <td><strong>{{ row.amount }}</strong></td>
                             <td>
-                                <strong class="{% if row.completed %}paid-balance{% endif %}" data-money-value="{{ row.balance_value }}" data-money-currency="{{ row.balance_currency }}">{{ row.balance }}</strong>
+                                <strong class="{% if row.completed %}paid-balance{% endif %}">{{ row.balance }}</strong>
                                 {% if row.completed %}
                                     <small class="payment-completed-label">Completado</small>
                                 {% else %}
@@ -118,7 +119,7 @@
     <h1 class="sr-only" id="mobile-payments-title">Pagos</h1>
     <article class="mobile-payments-total">
         <span>Total recaudado mes</span>
-        <strong data-money-value="{{ total_collected_month_value }}" data-money-currency="USD">{{ total_collected_month }}</strong>
+        <strong data-money-value="{{ total_collected_month_value|unlocalize }}" data-money-currency="USD">{{ total_collected_month }}</strong>
         <small><i data-lucide="trending-up" aria-hidden="true"></i> {% if collected_change > 0 %}+{% endif %}{{ collected_change }}% vs mes anterior</small>
     </article>
 
@@ -141,7 +142,7 @@
                         <small>{{ row.payment.payment_date|date:"d M, Y" }}</small>
                     </div>
                     <div class="mobile-payment-amount">
-                        <strong data-money-value="{{ row.amount_value }}" data-money-currency="{{ row.amount_currency }}">{{ row.amount }}</strong>
+                        <strong>{{ row.amount }}</strong>
                         <span class="{% if row.completed %}completed{% else %}review{% endif %}">{% if row.completed %}Completado{% else %}Aplicado{% endif %}</span>
                     </div>
                 </article>
