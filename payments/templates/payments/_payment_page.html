@@ -128,6 +128,38 @@
         <article><span>Vencidos</span><strong>{{ overdue_count }}</strong></article>
     </div>
 
+    <form class="mobile-payment-filters" method="get">
+        <div class="mobile-payment-filters-heading">
+            <h2>Filtrar pagos</h2>
+            {% if request.GET.borrower_name or request.GET.date_from or request.GET.date_to %}
+                <a href="{% url 'payments:list' %}">Limpiar</a>
+            {% endif %}
+        </div>
+        <div class="payment-filter-field">
+            <label for="mobile-payment-person-filter">Persona</label>
+            <select id="mobile-payment-person-filter" name="borrower_name">
+                <option value="">Todas las personas</option>
+                {% for person in person_choices %}
+                    <option value="{{ person }}" {% if selected_person == person %}selected{% endif %}>{{ person }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mobile-payment-date-fields">
+            <div class="payment-filter-field">
+                <label for="mobile-payment-date-from">Desde</label>
+                <input id="mobile-payment-date-from" name="date_from" type="date" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="payment-filter-field">
+                <label for="mobile-payment-date-to">Hasta</label>
+                <input id="mobile-payment-date-to" name="date_to" type="date" value="{{ request.GET.date_to }}">
+            </div>
+        </div>
+        {{ filter_form.non_field_errors }}
+        <button class="payments-apply-button" type="submit">
+            <i data-lucide="list-filter" aria-hidden="true"></i> Aplicar filtros
+        </button>
+    </form>
+
     <section class="mobile-recent-payments">
         <header>
             <h2>Pagos recientes</h2>
@@ -259,6 +291,16 @@
         .mobile-payment-counters span { color: #667085; font-size: 8px; }
         .mobile-payment-counters strong { font-size: 14px; margin-top: 5px; }
         .mobile-payment-counters article:last-child strong { color: #d92d20; }
+        .mobile-payment-filters { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; display: grid; gap: 10px; margin-bottom: 20px; padding: 12px; }
+        .mobile-payment-filters-heading { align-items: center; display: flex; justify-content: space-between; }
+        .mobile-payment-filters-heading h2 { font-size: 14px; margin: 0; }
+        .mobile-payment-filters-heading a { color: var(--primary-strong); font-size: 9px; font-weight: 600; text-decoration: none; }
+        .mobile-payment-date-fields { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+        .mobile-payment-filters .payment-filter-field label { font-size: 8px; }
+        .mobile-payment-filters .payment-filter-field select,
+        .mobile-payment-filters .payment-filter-field input { background: var(--field-background); border-color: var(--border); color: var(--neutral); font-size: 11px; height: 36px; }
+        .mobile-payment-filters .payments-apply-button { font-size: 10px; height: 36px; width: 100%; }
+        .mobile-payment-filters .errorlist { color: var(--danger); font-size: 9px; list-style: none; margin: 0; padding: 0; }
         .mobile-recent-payments > header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
         .mobile-recent-payments h2 { font-size: 14px; margin: 0; }
         .mobile-recent-payments header a { align-items: center; color: #0756d8; display: flex; font-size: 8px; font-weight: 600; text-decoration: none; }
