@@ -92,6 +92,22 @@ class AuthenticationTests(TestCase):
 
         self.assertRedirects(response, reverse("loans:dashboard"))
 
+    def test_authenticated_navigation_has_accessible_theme_controls(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        self.assertContains(response, '<button class="theme-toggle"', count=2)
+        self.assertContains(response, 'aria-label="Activar modo oscuro"', count=2)
+        self.assertContains(response, 'aria-pressed="false"')
+        self.assertContains(
+            response,
+            '<i data-theme-icon data-lucide="moon"',
+            count=2,
+        )
+        self.assertContains(response, 'localStorage.getItem("borrowing-theme")')
+        self.assertContains(response, 'localStorage.setItem(themeStorageKey, theme)')
+
     def test_email_cannot_be_used_to_log_in(self):
         response = self.client.post(
             reverse("users:login"),

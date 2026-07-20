@@ -4,7 +4,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f7fc" data-theme-color>
     <title>{% block title %}Borrowing{% endblock %}</title>
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem("borrowing-theme");
+            if (savedTheme === "dark") {
+                document.documentElement.dataset.theme = "dark";
+                document.querySelector("[data-theme-color]").content = "#0b1120";
+            }
+        })();
+    </script>
     <script src="{% static 'vendor/lucide.min.js' %}" defer></script>
     <style>
         :root {
@@ -24,11 +34,40 @@
             --success-soft: #dcfaeb;
             --warning: #a45600;
             --warning-soft: #fff3d6;
+            --field-background: #fbfcff;
+            --surface-hover: #f3f6fc;
+            --surface-muted: #f1f3fc;
+            --text-secondary: #475467;
+            --topbar-background: rgba(249, 250, 255, .94);
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --primary: #6f9fff;
+            --primary-strong: #8bb4ff;
+            --primary-soft: #1c3158;
+            --secondary: #182235;
+            --surface: #111827;
+            --canvas: #0b1120;
+            --neutral: #f3f4f6;
+            --muted: #aab4c5;
+            --border: #303b4f;
+            --danger: #ff8b8b;
+            --danger-soft: #482126;
+            --success: #70ddb2;
+            --success-soft: #143a2f;
+            --warning: #ffd087;
+            --warning-soft: #49351a;
+            --field-background: #151f31;
+            --surface-hover: #1a263a;
+            --surface-muted: #182235;
+            --text-secondary: #b4bece;
+            --topbar-background: rgba(11, 17, 32, .94);
+        }
+
         * { box-sizing: border-box; }
-        html { min-height: 100%; }
+        html { background: var(--canvas); min-height: 100%; }
         body { background: var(--canvas); color: var(--neutral); margin: 0; min-height: 100vh; }
         button, input, select { font: inherit; }
         button, a { -webkit-tap-highlight-color: transparent; }
@@ -50,12 +89,12 @@
         }
         .brand { color: var(--primary-strong); display: block; margin: 0 16px 38px; text-decoration: none; }
         .brand strong { display: block; font-size: 24px; letter-spacing: -.04em; line-height: 1.1; }
-        .brand span { color: #475467; display: block; font-size: 13px; margin-top: 4px; }
+        .brand span { color: var(--text-secondary); display: block; font-size: 13px; margin-top: 4px; }
         .side-nav { display: grid; gap: 7px; }
         .nav-item {
             align-items: center;
             border-radius: 9px;
-            color: #475467;
+            color: var(--text-secondary);
             display: flex;
             font-size: 15px;
             font-weight: 500;
@@ -64,7 +103,7 @@
             padding: 0 18px;
             text-decoration: none;
         }
-        .nav-item:hover { background: #f3f6fc; color: var(--primary-strong); }
+        .nav-item:hover { background: var(--surface-hover); color: var(--primary-strong); }
         .nav-item.active { background: var(--primary); color: #fff; font-weight: 700; }
         .nav-icon { font-size: 20px; line-height: 1; width: 20px; }
         .logout-form { border-top: 1px solid var(--border); margin-top: auto; padding-top: 22px; }
@@ -72,11 +111,11 @@
 
         .topbar {
             align-items: center;
-            background: rgba(249, 250, 255, .94);
+            background: var(--topbar-background);
             border-bottom: 1px solid var(--border);
             display: flex;
             height: 64px;
-            justify-content: flex-end;
+            justify-content: space-between;
             left: 260px;
             padding: 0 28px 0 38px;
             position: fixed;
@@ -85,6 +124,22 @@
             z-index: 20;
         }
         .topbar-user { align-items: center; display: flex; gap: 12px; }
+        .theme-toggle {
+            align-items: center;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            height: 40px;
+            justify-content: center;
+            padding: 0;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+            width: 40px;
+        }
+        .theme-toggle:hover { background: var(--surface-hover); color: var(--primary-strong); }
+        .theme-toggle .lucide { height: 18px; width: 18px; }
         .avatar {
             align-items: center;
             background: #dfe7fb;
@@ -114,8 +169,8 @@
         .mobile-header, .mobile-bottom-nav { display: none; }
         .page-heading { align-items: end; display: flex; justify-content: space-between; margin-bottom: 32px; }
         .page-heading h1 { font-size: clamp(30px, 3vw, 40px); letter-spacing: -.04em; line-height: 1; margin: 0 0 10px; }
-        .page-heading p { color: #475467; margin: 0; }
-        .breadcrumb { color: #475467; font-size: 14px; margin-top: 10px; }
+        .page-heading p { color: var(--text-secondary); margin: 0; }
+        .breadcrumb { color: var(--text-secondary); font-size: 14px; margin-top: 10px; }
         .breadcrumb strong { color: var(--neutral); }
         .button, button.primary {
             align-items: center;
@@ -162,10 +217,10 @@
         .toolbar-actions { align-items: center; display: flex; gap: 10px; }
         .outline-button {
             align-items: center;
-            background: #f8f9fd;
-            border: 1px solid #cbd2e3;
+            background: var(--field-background);
+            border: 1px solid var(--border);
             border-radius: 9px;
-            color: #344054;
+            color: var(--text-secondary);
             cursor: pointer;
             display: inline-flex;
             gap: 8px;
@@ -580,6 +635,186 @@
         .auth-switch a { color: var(--primary-strong); font-weight: 700; text-decoration: none; }
         .auth-copyright { color: #7a8293; font-size: 11px; margin-top: 34px; text-align: center; }
 
+        html[data-theme="dark"] .avatar {
+            background: #1d3158;
+            border-color: #36527b;
+        }
+        html[data-theme="dark"] .flash-messages li { border-color: #28634e; }
+        html[data-theme="dark"] .field-requirement.optional,
+        html[data-theme="dark"] .loan-pagination,
+        html[data-theme="dark"] .payments-pagination,
+        html[data-theme="dark"] .currency-switcher,
+        html[data-theme="dark"] .module-currency-switcher,
+        html[data-theme="dark"] .payments-apply-button,
+        html[data-theme="dark"] .mobile-payment-counters article {
+            background: var(--surface-muted);
+            border-color: var(--border);
+        }
+        html[data-theme="dark"] .field input,
+        html[data-theme="dark"] .field select,
+        html[data-theme="dark"] .field textarea,
+        html[data-theme="dark"] .filter-menu input,
+        html[data-theme="dark"] .filter-menu select,
+        html[data-theme="dark"] .payment-filter-field input,
+        html[data-theme="dark"] .payment-filter-field select,
+        html[data-theme="dark"] .payment-form-field input,
+        html[data-theme="dark"] .payment-form-field select,
+        html[data-theme="dark"] .payment-form-field textarea,
+        html[data-theme="dark"] .phone-prefix-trigger,
+        html[data-theme="dark"] .phone-prefix-search {
+            background: var(--field-background);
+            border-color: var(--border);
+            color: var(--neutral);
+        }
+        html[data-theme="dark"] .filter-menu,
+        html[data-theme="dark"] .phone-prefix-popover,
+        html[data-theme="dark"] .modal-card,
+        html[data-theme="dark"] .profile-card,
+        html[data-theme="dark"] .profile-summary,
+        html[data-theme="dark"] .metric-card,
+        html[data-theme="dark"] .dashboard-panel,
+        html[data-theme="dark"] .mobile-summary-card,
+        html[data-theme="dark"] .mobile-performance,
+        html[data-theme="dark"] .mobile-dashboard-section .upcoming-list,
+        html[data-theme="dark"] .activity-list,
+        html[data-theme="dark"] .payments-filter-card,
+        html[data-theme="dark"] .payments-table-card,
+        html[data-theme="dark"] .payment-actions-menu form,
+        html[data-theme="dark"] .mobile-payment-item,
+        html[data-theme="dark"] .payment-modal-card {
+            background: var(--surface);
+            border-color: var(--border);
+        }
+        html[data-theme="dark"] .modal-header,
+        html[data-theme="dark"] .payment-modal-header,
+        html[data-theme="dark"] .dashboard-table th,
+        html[data-theme="dark"] .payments-table thead {
+            background: var(--surface-muted);
+            border-color: var(--border);
+        }
+        html[data-theme="dark"] .loan-table tbody tr:hover,
+        html[data-theme="dark"] .upcoming-item:hover,
+        html[data-theme="dark"] .phone-prefix-options li.is-active button {
+            background: var(--surface-hover);
+        }
+        html[data-theme="dark"] .loan-table th,
+        html[data-theme="dark"] .loan-table td,
+        html[data-theme="dark"] .loan-pagination a,
+        html[data-theme="dark"] .dashboard-table td,
+        html[data-theme="dark"] .payments-table td,
+        html[data-theme="dark"] .payments-pagination nav a,
+        html[data-theme="dark"] .upcoming-item,
+        html[data-theme="dark"] .activity-item,
+        html[data-theme="dark"] .mobile-bars,
+        html[data-theme="dark"] .panel-heading-bordered {
+            border-color: var(--border);
+        }
+        html[data-theme="dark"] .brand span,
+        html[data-theme="dark"] .nav-item,
+        html[data-theme="dark"] .status-tab,
+        html[data-theme="dark"] .outline-button,
+        html[data-theme="dark"] .field small,
+        html[data-theme="dark"] .field label,
+        html[data-theme="dark"] .loan-table th,
+        html[data-theme="dark"] .loan-pagination,
+        html[data-theme="dark"] .profile-heading p,
+        html[data-theme="dark"] .secondary-button,
+        html[data-theme="dark"] .auth-switch,
+        html[data-theme="dark"] .dashboard-heading p,
+        html[data-theme="dark"] .metric-label,
+        html[data-theme="dark"] .panel-heading > span,
+        html[data-theme="dark"] .desktop-bar-column small,
+        html[data-theme="dark"] .line-chart-labels small,
+        html[data-theme="dark"] .dashboard-table th,
+        html[data-theme="dark"] .dashboard-table td small,
+        html[data-theme="dark"] .dashboard-empty,
+        html[data-theme="dark"] .date-tile small,
+        html[data-theme="dark"] .upcoming-person small,
+        html[data-theme="dark"] .mobile-dashboard-heading p,
+        html[data-theme="dark"] .mobile-summary-card > span,
+        html[data-theme="dark"] .mobile-chart-legend,
+        html[data-theme="dark"] .activity-item small,
+        html[data-theme="dark"] .activity-item time,
+        html[data-theme="dark"] .payments-heading p,
+        html[data-theme="dark"] .payment-filter-field label,
+        html[data-theme="dark"] .payments-table th,
+        html[data-theme="dark"] .payments-table td,
+        html[data-theme="dark"] .payment-person small,
+        html[data-theme="dark"] .payment-actions-menu summary,
+        html[data-theme="dark"] .payments-empty,
+        html[data-theme="dark"] .payments-pagination > span,
+        html[data-theme="dark"] .mobile-payment-counters span,
+        html[data-theme="dark"] .mobile-payment-item > div > small {
+            color: var(--muted);
+        }
+        html[data-theme="dark"] .payment-person strong,
+        html[data-theme="dark"] .mobile-payment-amount strong {
+            color: var(--neutral);
+        }
+        html[data-theme="dark"] .currency-switcher button,
+        html[data-theme="dark"] .module-currency-switcher button {
+            color: var(--text-secondary);
+        }
+        html[data-theme="dark"] .currency-switcher button.active,
+        html[data-theme="dark"] .module-currency-switcher button.active {
+            background: #26344b;
+            color: var(--primary-strong);
+        }
+        html[data-theme="dark"] .metric-icon.blue,
+        html[data-theme="dark"] .metric-icon.indigo,
+        html[data-theme="dark"] .date-tile,
+        html[data-theme="dark"] .borrower-avatar,
+        html[data-theme="dark"] .payment-person > span,
+        html[data-theme="dark"] .mobile-payment-avatar,
+        html[data-theme="dark"] .activity-icon.payment {
+            background: var(--primary-soft);
+            border-color: #36527b;
+            color: var(--primary-strong);
+        }
+        html[data-theme="dark"] .metric-icon.slate { background: #283449; color: #c2ccdc; }
+        html[data-theme="dark"] .metric-icon.green,
+        html[data-theme="dark"] .activity-icon.loan { background: var(--success-soft); color: var(--success); }
+        html[data-theme="dark"] .metric-icon.amber { background: var(--warning-soft); color: var(--warning); }
+        html[data-theme="dark"] .dashboard-status.pending,
+        html[data-theme="dark"] .mobile-payment-amount span.review {
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+        html[data-theme="dark"] .dashboard-status.paid,
+        html[data-theme="dark"] .payment-completed-label,
+        html[data-theme="dark"] .mobile-payment-amount span.completed {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+        html[data-theme="dark"] .overdue-count,
+        html[data-theme="dark"] .payment-form-errors,
+        html[data-theme="dark"] .payment-alert.error {
+            background: var(--danger-soft);
+            border-color: #78383e;
+            color: var(--danger);
+        }
+        html[data-theme="dark"] .payment-alert.warning {
+            background: var(--warning-soft);
+            border-color: #76582c;
+            color: var(--warning);
+        }
+        html[data-theme="dark"] .payment-loan-info {
+            background: var(--surface-muted);
+            border-color: var(--border);
+        }
+        html[data-theme="dark"] .payment-conversion-info {
+            background: var(--success-soft);
+            border-color: #28634e;
+        }
+        html[data-theme="dark"] .summary-progress,
+        html[data-theme="dark"] .balance-progress,
+        html[data-theme="dark"] .mobile-bar-track i { background: #344157; }
+        html[data-theme="dark"] .desktop-line-chart line { stroke: var(--border); }
+        html[data-theme="dark"] .auth-main,
+        html[data-theme="dark"] .auth-panel { background: var(--canvas); }
+        html[data-theme="dark"] body.dashboard-page,
+        html[data-theme="dark"] body.payments-page { background: var(--canvas); }
+
         @media (max-width: 1050px) {
             .page-main { padding-left: 34px; padding-right: 34px; }
             .loan-table th, .loan-table td { padding-left: 11px; padding-right: 11px; }
@@ -587,11 +822,11 @@
         }
 
         @media (max-width: 900px) {
-            body { background: #f8f9fd; padding-bottom: 76px; }
+            body { background: var(--canvas); padding-bottom: 76px; }
             .sidebar, .topbar { display: none; }
             .mobile-header {
                 align-items: center;
-                background: rgba(255, 255, 255, .96);
+                background: var(--topbar-background);
                 border-bottom: 1px solid var(--border);
                 display: flex;
                 height: 66px;
@@ -603,6 +838,7 @@
             }
             .mobile-brand { color: var(--primary-strong); font-size: 15px; font-weight: 800; text-decoration: none; }
             .mobile-user { align-items: center; display: flex; gap: 14px; }
+            .mobile-user .theme-toggle { height: 36px; width: 36px; }
             .page-main { margin: 0; padding: 22px 18px 30px; }
             .content-wrap { max-width: none; }
             .flash-messages { margin-bottom: 14px; }
@@ -651,7 +887,7 @@
 
             .mobile-bottom-nav {
                 align-items: center;
-                background: rgba(255, 255, 255, .98);
+                background: var(--topbar-background);
                 border-top: 1px solid var(--border);
                 bottom: 0;
                 display: flex;
@@ -760,6 +996,15 @@
         </aside>
 
         <header class="topbar">
+            <button class="theme-toggle"
+                    type="button"
+                    data-theme-toggle
+                    aria-label="Activar modo oscuro"
+                    aria-pressed="false"
+                    title="Activar modo oscuro">
+                <i data-theme-icon data-lucide="moon" aria-hidden="true"></i>
+                <span class="sr-only" data-theme-label>Activar modo oscuro</span>
+            </button>
             <div class="topbar-user">
                 <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
                 <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
@@ -768,7 +1013,18 @@
 
         <header class="mobile-header">
             <a class="mobile-brand" href="{% url 'loans:dashboard' %}">{% block mobile_brand_content %}Borrowing{% endblock %}</a>
-            <div class="mobile-user"><span class="avatar">{{ user.username|slice:":2"|upper }}</span></div>
+            <div class="mobile-user">
+                <button class="theme-toggle"
+                        type="button"
+                        data-theme-toggle
+                        aria-label="Activar modo oscuro"
+                        aria-pressed="false"
+                        title="Activar modo oscuro">
+                    <i data-theme-icon data-lucide="moon" aria-hidden="true"></i>
+                    <span class="sr-only" data-theme-label>Activar modo oscuro</span>
+                </button>
+                <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
+            </div>
         </header>
 
         <main class="page-main">
@@ -791,6 +1047,46 @@
     <main class="auth-main">{% block auth_content %}{% endblock %}</main>
 {% endif %}
 <script>
+    const themeStorageKey = "borrowing-theme";
+
+    function getCurrentTheme() {
+        return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    }
+
+    function updateThemeControls(theme) {
+        const isDark = theme === "dark";
+        const label = isDark ? "Activar modo claro" : "Activar modo oscuro";
+
+        document.querySelectorAll("[data-theme-toggle]").forEach(function (toggle) {
+            toggle.setAttribute("aria-pressed", String(isDark));
+            toggle.setAttribute("aria-label", label);
+            toggle.title = label;
+            const text = toggle.querySelector("[data-theme-label]");
+            const icon = toggle.querySelector("[data-theme-icon]");
+            if (text) text.textContent = label;
+            if (icon) icon.setAttribute("data-lucide", isDark ? "sun" : "moon");
+        });
+    }
+
+    function setTheme(theme) {
+        if (theme === "dark") document.documentElement.dataset.theme = "dark";
+        else delete document.documentElement.dataset.theme;
+
+        localStorage.setItem(themeStorageKey, theme);
+        document.querySelector("[data-theme-color]").content =
+            theme === "dark" ? "#0b1120" : "#f6f7fc";
+        updateThemeControls(theme);
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    updateThemeControls(getCurrentTheme());
+
+    document.addEventListener("click", function (event) {
+        const themeToggle = event.target.closest("[data-theme-toggle]");
+        if (!themeToggle) return;
+        setTheme(getCurrentTheme() === "dark" ? "light" : "dark");
+    });
+
     document.addEventListener("click", function (event) {
         const toggle = event.target.closest("[data-password-toggle]");
         if (!toggle) return;
