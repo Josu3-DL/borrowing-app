@@ -51,7 +51,8 @@
 </div>
 
 <section class="loan-table-card" aria-label="Listado de préstamos">
-    <table class="loan-table">
+    <div class="loan-table-scroll-content">
+        <table class="loan-table">
         <colgroup>
             <col style="width: 11%">
             <col style="width: 22%">
@@ -108,28 +109,29 @@
                 <tr><td class="empty-state" colspan="8">No hay préstamos que mostrar con estos filtros.</td></tr>
             {% endfor %}
         </tbody>
-    </table>
-    {% if paginator.count %}
-        <footer class="loan-pagination">
-            <span>
-                Mostrando <strong>{{ page_obj.start_index }} a {{ page_obj.end_index }}</strong>
-                de <strong>{{ paginator.count }}</strong> préstamos
-            </span>
-            {% if paginator.num_pages > 1 %}
-                <nav aria-label="Paginación de préstamos">
-                    {% if page_obj.has_previous %}
-                        <a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Página anterior"><i data-lucide="chevron-left" aria-hidden="true"></i></a>
-                    {% endif %}
-                    {% for number in paginator.page_range %}
-                        <a class="{% if number == page_obj.number %}active{% endif %}" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ number }}">{{ number }}</a>
-                    {% endfor %}
-                    {% if page_obj.has_next %}
-                        <a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" aria-label="Página siguiente"><i data-lucide="chevron-right" aria-hidden="true"></i></a>
-                    {% endif %}
-                </nav>
-            {% endif %}
-        </footer>
-    {% endif %}
+        </table>
+        {% if paginator.count %}
+            <footer class="loan-pagination">
+                <span>
+                    Mostrando <strong>{{ page_obj.start_index }} a {{ page_obj.end_index }}</strong>
+                    de <strong>{{ paginator.count }}</strong> préstamos
+                </span>
+                {% if paginator.num_pages > 1 %}
+                    <nav aria-label="Paginación de préstamos">
+                        {% if page_obj.has_previous %}
+                            <a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Página anterior"><i data-lucide="chevron-left" aria-hidden="true"></i></a>
+                        {% endif %}
+                        {% for number in paginator.page_range %}
+                            <a class="{% if number == page_obj.number %}active{% endif %}" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ number }}">{{ number }}</a>
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                            <a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" aria-label="Página siguiente"><i data-lucide="chevron-right" aria-hidden="true"></i></a>
+                        {% endif %}
+                    </nav>
+                {% endif %}
+            </footer>
+        {% endif %}
+    </div>
 </section>
 
 <section class="loan-cards" aria-label="Listado de préstamos">
@@ -221,7 +223,7 @@
             padding: 20px 18px;
         }
 
-        body.loans-page .loan-table {
+        body.loans-page .loan-table-scroll-content {
             min-width: 1050px;
         }
 

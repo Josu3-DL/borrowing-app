@@ -202,6 +202,18 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(response, own_loan.borrower_name)
         self.assertNotContains(response, other_loan.borrower_name)
 
+    def test_list_keeps_table_and_pagination_in_same_scroll_container(self):
+        self.create_loan()
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:list"))
+
+        self.assertContains(response, 'class="loan-table-scroll-content"')
+        self.assertContains(
+            response,
+            "body.loans-page .loan-table-scroll-content {",
+        )
+
     def test_list_filters_loans_by_status(self):
         pending = self.create_loan(
             borrower_name="Pending borrower",
