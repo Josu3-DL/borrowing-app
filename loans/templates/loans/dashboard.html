@@ -9,6 +9,10 @@
             <p>Bienvenido de nuevo. Aquí tienes un resumen de tu cartera actual.</p>
         </div>
         <div class="dashboard-actions">
+            <div class="currency-switcher" role="group" aria-label="Moneda del panel">
+                <button type="button" class="active" data-currency="NIO" aria-pressed="true">C$ Córdobas</button>
+                <button type="button" data-currency="USD" aria-pressed="false">$ Dólares</button>
+            </div>
             <a class="dashboard-primary-button" href="{% url 'loans:create' %}">
                 <i data-lucide="plus" aria-hidden="true"></i> Nuevo préstamo
             </a>
@@ -22,7 +26,7 @@
                 <span class="metric-change {% if lent_change < 0 %}negative{% else %}positive{% endif %}">{% if lent_change > 0 %}+{% endif %}{{ lent_change }}%</span>
             </div>
             <span class="metric-label">Total prestado</span>
-            <strong>{{ total_lent }}</strong>
+            <strong data-currency-field="total_lent">{{ total_lent }}</strong>
         </article>
         <article class="metric-card">
             <div class="metric-top">
@@ -30,7 +34,7 @@
                 <span class="metric-change {% if recovered_change < 0 %}negative{% else %}positive{% endif %}">{% if recovered_change > 0 %}+{% endif %}{{ recovered_change }}%</span>
             </div>
             <span class="metric-label">Total recuperado</span>
-            <strong>{{ total_recovered }}</strong>
+            <strong data-currency-field="total_recovered">{{ total_recovered }}</strong>
         </article>
         <article class="metric-card">
             <div class="metric-top">
@@ -38,7 +42,7 @@
                 <span class="metric-change neutral">{{ pending_change }}%</span>
             </div>
             <span class="metric-label">Pendiente</span>
-            <strong>{{ total_pending }}</strong>
+            <strong data-currency-field="total_pending">{{ total_pending }}</strong>
         </article>
         <article class="metric-card">
             <div class="metric-top">
@@ -59,7 +63,7 @@
                 <span class="metric-icon glass"><i data-lucide="calendar-days" aria-hidden="true"></i></span>
             </div>
             <span class="metric-label">Pagos del mes</span>
-            <strong>{{ payments_this_month }}</strong>
+            <strong data-currency-field="payments_this_month">{{ payments_this_month }}</strong>
         </article>
     </div>
 
@@ -94,7 +98,7 @@
                     </defs>
                     <line x1="0" x2="580" y1="210" y2="210" stroke="#e7eaf2"/>
                     <polygon points="{{ recovery_area_points }}" fill="url(#recovery-area)"/>
-                    <polyline points="{{ recovery_points }}" fill="none" stroke="#0756d8" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+                    <polyline data-recovery-line points="{{ recovery_points }}" fill="none" stroke="#0756d8" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
                 </svg>
                 <div class="line-chart-labels">
                     {% for month in month_series %}<small>{{ month.label }}</small>{% endfor %}
@@ -114,12 +118,12 @@
                     <thead>
                         <tr><th>Cliente</th><th>Monto</th><th>Estado</th></tr>
                     </thead>
-                    <tbody>
+                    <tbody id="recent-loans-body">
                         {% for loan in recent_loans %}
                             <tr>
-                                <td><strong>{{ loan.borrower_name }}</strong><small>{{ loan.loan_date|date:"d M Y" }}</small></td>
-                                <td>{{ loan.currency_symbol }}{{ loan.amount|floatformat:2 }}</td>
-                                <td><span class="dashboard-status {{ loan.status }}">{{ loan.get_status_display }}</span></td>
+                                <td><strong>{{ loan.borrower_name }}</strong><small>{{ loan.loan_date }}</small></td>
+                                <td>{{ loan.amount }}</td>
+                                <td><span class="dashboard-status {{ loan.status }}">{{ loan.status_display }}</span></td>
                             </tr>
                         {% empty %}
                             <tr><td class="dashboard-empty" colspan="3">Aún no hay préstamos registrados.</td></tr>
@@ -134,9 +138,9 @@
                 <h2>Próximos pagos pendientes</h2>
                 <a href="{% url 'loans:list' %}">Ver calendario</a>
             </header>
-            <div class="upcoming-list desktop-upcoming-list">
+            <div class="upcoming-list desktop-upcoming-list" id="desktop-upcoming-list">
                 {% for item in upcoming_loans %}
-                    <a href="{% url 'loans:update' item.loan.pk %}" class="upcoming-item">
+                    <a href="{% url 'loans:update' item.id %}" class="upcoming-item">
                         <span class="date-tile"><small>{{ item.month }}</small><strong>{{ item.day }}</strong></span>
                         <span class="upcoming-person"><strong>{{ item.loan.borrower_name }}</strong><small>{{ item.due_label }}</small></span>
                         <span class="upcoming-amount"><strong>{{ item.amount }}</strong><small class="{{ item.due_state }}">Pendiente</small></span>
@@ -158,7 +162,7 @@
     <article class="mobile-total-card">
         <div>
             <span>Total prestado</span>
-            <strong>{{ total_lent }}</strong>
+            <strong data-currency-field="total_lent">{{ total_lent }}</strong>
             <small><i data-lucide="trending-up" aria-hidden="true"></i> {{ lent_change }}% este mes</small>
         </div>
         <i class="mobile-total-art" data-lucide="banknote" aria-hidden="true"></i>
@@ -167,12 +171,12 @@
     <div class="mobile-summary-grid">
         <article class="mobile-summary-card recovered">
             <span><i data-lucide="circle-check" aria-hidden="true"></i> Recuperado</span>
-            <strong>{{ total_recovered }}</strong>
+            <strong data-currency-field="total_recovered">{{ total_recovered }}</strong>
             <i class="summary-progress"></i>
         </article>
         <article class="mobile-summary-card pending">
             <span><i data-lucide="clipboard-clock" aria-hidden="true"></i> Pendiente</span>
-            <strong>{{ total_pending }}</strong>
+            <strong data-currency-field="total_pending">{{ total_pending }}</strong>
             <i class="summary-progress"></i>
         </article>
     </div>
@@ -198,9 +202,9 @@
             <h2>Próximos pagos</h2>
             {% if upcoming_loans %}<span class="overdue-count">{{ upcoming_loans|length }} pendientes</span>{% endif %}
         </header>
-        <div class="upcoming-list">
+        <div class="upcoming-list" id="mobile-upcoming-list">
             {% for item in upcoming_loans|slice:":3" %}
-                <a href="{% url 'loans:update' item.loan.pk %}" class="upcoming-item">
+                <a href="{% url 'loans:update' item.id %}" class="upcoming-item">
                     <span class="borrower-avatar"><i data-lucide="user-round" aria-hidden="true"></i></span>
                     <span class="upcoming-person"><strong>{{ item.loan.borrower_name }}</strong><small>{{ item.due_label }}</small></span>
                     <span class="upcoming-amount"><strong>{{ item.amount }}</strong><small class="{{ item.due_state }}">Pendiente</small></span>
@@ -213,7 +217,7 @@
 
     <article class="mobile-dashboard-section" id="activity">
         <header><h2>Actividad reciente</h2></header>
-        <div class="activity-list">
+        <div class="activity-list" id="recent-activity-list">
             {% for item in recent_activity %}
                 <div class="activity-item">
                     <span class="activity-icon {{ item.kind }}"><i data-lucide="{{ item.icon }}" aria-hidden="true"></i></span>
@@ -231,6 +235,129 @@
     </a>
 </section>
 
+{{ currency_data|json_script:"dashboard-currency-data" }}
+<script>
+    (() => {
+        const currencyData = JSON.parse(document.getElementById("dashboard-currency-data").textContent);
+        const buttons = document.querySelectorAll("[data-currency]");
+        const updateUrl = (id) => `/loans/${id}/edit/`;
+
+        const appendText = (parent, tag, value, className = "") => {
+            const node = document.createElement(tag);
+            node.textContent = value;
+            if (className) node.className = className;
+            parent.appendChild(node);
+            return node;
+        };
+
+        const renderUpcoming = (target, items, mobile) => {
+            target.replaceChildren();
+            if (!items.length) {
+                appendText(target, "p", "No hay pagos pendientes.", "dashboard-empty");
+                return;
+            }
+            items.slice(0, mobile ? 3 : 4).forEach((item) => {
+                const link = document.createElement("a");
+                link.href = updateUrl(item.id);
+                link.className = "upcoming-item";
+                if (mobile) {
+                    const avatar = document.createElement("span");
+                    avatar.className = "borrower-avatar";
+                    avatar.innerHTML = '<i data-lucide="user-round" aria-hidden="true"></i>';
+                    link.appendChild(avatar);
+                } else {
+                    const tile = document.createElement("span");
+                    tile.className = "date-tile";
+                    appendText(tile, "small", item.month);
+                    appendText(tile, "strong", item.day);
+                    link.appendChild(tile);
+                }
+                const person = document.createElement("span");
+                person.className = "upcoming-person";
+                appendText(person, "strong", item.borrower_name);
+                appendText(person, "small", item.due_label);
+                link.appendChild(person);
+                const amount = document.createElement("span");
+                amount.className = "upcoming-amount";
+                appendText(amount, "strong", item.amount);
+                appendText(amount, "small", "Pendiente", item.due_state);
+                link.appendChild(amount);
+                target.appendChild(link);
+            });
+        };
+
+        const switchCurrency = (currency) => {
+            localStorage.setItem("borrowing-display-currency", currency);
+            const data = currencyData[currency];
+            document.querySelectorAll("[data-currency-field]").forEach((element) => {
+                element.textContent = data[element.dataset.currencyField];
+            });
+            buttons.forEach((button) => {
+                const selected = button.dataset.currency === currency;
+                button.classList.toggle("active", selected);
+                button.setAttribute("aria-pressed", selected);
+            });
+            return;
+            document.querySelectorAll(".desktop-bar, .mobile-bar-track i").forEach((bar, index) => {
+                bar.style.height = `${data.month_series[index % data.month_series.length].lent_height}%`;
+            });
+            document.querySelector("[data-recovery-line]").setAttribute("points", data.recovery_points);
+            document.querySelector(".desktop-line-chart polygon").setAttribute("points", data.recovery_area_points);
+
+            const recent = document.getElementById("recent-loans-body");
+            recent.replaceChildren();
+            if (!data.recent_loans.length) {
+                const row = document.createElement("tr");
+                const cell = appendText(row, "td", "Aún no hay préstamos registrados.", "dashboard-empty");
+                cell.colSpan = 3;
+                recent.appendChild(row);
+            }
+            data.recent_loans.forEach((loan) => {
+                const row = document.createElement("tr");
+                const borrower = document.createElement("td");
+                appendText(borrower, "strong", loan.borrower_name);
+                appendText(borrower, "small", loan.loan_date);
+                row.appendChild(borrower);
+                appendText(row, "td", loan.amount);
+                const state = document.createElement("td");
+                appendText(state, "span", loan.status_display, `dashboard-status ${loan.status}`);
+                row.appendChild(state);
+                recent.appendChild(row);
+            });
+            renderUpcoming(document.getElementById("desktop-upcoming-list"), data.upcoming_loans, false);
+            renderUpcoming(document.getElementById("mobile-upcoming-list"), data.upcoming_loans, true);
+            const activity = document.getElementById("recent-activity-list");
+            activity.replaceChildren();
+            if (!data.recent_activity.length) {
+                appendText(activity, "p", "Tu actividad reciente aparecerá aquí.", "dashboard-empty");
+            }
+            data.recent_activity.forEach((item) => {
+                const row = document.createElement("div");
+                row.className = "activity-item";
+                const icon = document.createElement("span");
+                icon.className = `activity-icon ${item.kind}`;
+                icon.innerHTML = `<i data-lucide="${item.icon}" aria-hidden="true"></i>`;
+                row.appendChild(icon);
+                const description = document.createElement("span");
+                appendText(description, "strong", item.title);
+                appendText(description, "small", item.detail);
+                row.appendChild(description);
+                appendText(row, "time", "Reciente");
+                activity.appendChild(row);
+            });
+            buttons.forEach((button) => {
+                const selected = button.dataset.currency === currency;
+                button.classList.toggle("active", selected);
+                button.setAttribute("aria-pressed", selected);
+            });
+            if (window.lucide) window.lucide.createIcons();
+        };
+
+        buttons.forEach((button) => button.addEventListener("click", () => switchCurrency(button.dataset.currency)));
+        switchCurrency(localStorage.getItem("borrowing-display-currency") || "NIO");
+    })();
+</script>
+
 <style>
     .dashboard-mobile { display: none; }
     .dashboard-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 24px; }
@@ -238,6 +365,9 @@
     .dashboard-heading p { color: #667085; font-size: 14px; margin: 0; }
     .dashboard-actions { display: flex; gap: 12px; }
     .dashboard-actions a { align-items: center; border-radius: 8px; display: inline-flex; font-size: 13px; font-weight: 700; gap: 8px; min-height: 42px; padding: 0 17px; text-decoration: none; }
+    .currency-switcher { align-items: center; background: #edf2ff; border: 1px solid #cdd9f7; border-radius: 9px; display: flex; padding: 3px; }
+    .currency-switcher button { background: transparent; border: 0; border-radius: 6px; color: #42526e; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; min-height: 34px; padding: 0 10px; }
+    .currency-switcher button.active { background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .14); color: #0756d8; }
     .dashboard-primary-button { background: #0756d8; border: 1px solid #0756d8; color: #fff; }
     .dashboard-actions .lucide { height: 15px; width: 15px; }
 
