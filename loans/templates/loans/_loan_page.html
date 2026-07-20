@@ -101,6 +101,7 @@
                     </td>
                     <td class="money balance {% if loan.is_overdue %}overdue-balance{% endif %}">{{ loan.currency_symbol }}{{ loan.remaining_balance }}</td>
                     <td class="actions">
+                        <button type="button" class="icon-action ph-history-trigger" data-history-url="{% url 'payments:loan_payments_json' loan.pk %}" data-borrower="{{ loan.borrower_name }}" aria-label="Historial de abonos de {{ loan.borrower_name }}" title="Ver historial"><i data-lucide="clock" aria-hidden="true"></i></button>
                         <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i></a>
                         <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}" title="Eliminar"><i data-lucide="trash-2" aria-hidden="true"></i></a>
                     </td>
@@ -158,6 +159,7 @@
             </div>
             <div class="loan-card-dates"><span>Inicio: {{ loan.loan_date|date:"d/m/Y" }}</span></div>
             <div class="loan-card-actions">
+                <button type="button" class="icon-action ph-history-trigger" data-history-url="{% url 'payments:loan_payments_json' loan.pk %}" data-borrower="{{ loan.borrower_name }}" aria-label="Historial de abonos de {{ loan.borrower_name }}" title="Ver historial"><i data-lucide="clock" aria-hidden="true"></i></button>
                 <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}"><i data-lucide="pencil" aria-hidden="true"></i></a>
                 <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}"><i data-lucide="trash-2" aria-hidden="true"></i></a>
             </div>
@@ -168,6 +170,248 @@
 </section>
 
 <a class="fab" href="{% url 'loans:create' %}" aria-label="Crear préstamo"><i data-lucide="plus" aria-hidden="true"></i></a>
+
+<!-- Modal: Historial de abonos del préstamo -->
+<div id="ph-modal" class="ph-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ph-modal-title">
+    <div class="ph-card">
+        <div class="ph-card-header">
+            <div>
+                <h2 id="ph-modal-title">Historial de abonos</h2>
+                <p id="ph-modal-sub"></p>
+            </div>
+            <button class="ph-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="ph-summary">
+            <div class="ph-summary-item">
+                <span>Monto original</span>
+                <strong id="ph-amount"></strong>
+            </div>
+            <div class="ph-summary-item">
+                <span>Total abonado</span>
+                <strong id="ph-total-paid" class="ph-paid"></strong>
+            </div>
+            <div class="ph-summary-item">
+                <span>Saldo restante</span>
+                <strong id="ph-balance" class="ph-pending"></strong>
+            </div>
+            <div class="ph-summary-item">
+                <span>Estado</span>
+                <strong id="ph-status"></strong>
+            </div>
+        </div>
+        <div class="ph-table-wrap">
+            <table class="ph-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Monto abonado</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody id="ph-tbody"></tbody>
+            </table>
+            <p id="ph-empty" class="ph-empty-msg" style="display:none;">No hay abonos registrados para este préstamo.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* ── Botón "Ver historial" en columna de acciones ─────────────────────── */
+    .ph-history-trigger { background: transparent; border: 0; cursor: pointer; padding: 0; }
+
+    /* ── Overlay / fondo del modal ────────────────────────────────────────── */
+    .ph-overlay {
+        align-items: center;
+        background: rgba(10, 16, 30, .58);
+        bottom: 0; left: 0; right: 0; top: 0;
+        display: none;
+        justify-content: center;
+        padding: 16px;
+        position: fixed;
+        z-index: 200;
+    }
+    .ph-overlay[aria-hidden="false"] { display: flex; }
+
+    /* ── Tarjeta principal ────────────────────────────────────────────────── */
+    .ph-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(10, 16, 30, .18);
+        display: flex;
+        flex-direction: column;
+        max-height: 88vh;
+        max-width: 640px;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    /* ── Cabecera ─────────────────────────────────────────────────────────── */
+    .ph-card-header {
+        align-items: flex-start;
+        background: var(--surface-muted);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-shrink: 0;
+        justify-content: space-between;
+        padding: 20px 24px 18px;
+    }
+    .ph-card-header h2 { color: var(--neutral); font-size: 18px; letter-spacing: -.03em; margin: 0 0 4px; }
+    .ph-card-header p  { color: var(--muted);   font-size: 13px; margin: 0; }
+
+    /* ── Botón cerrar ─────────────────────────────────────────────────────── */
+    .ph-close {
+        align-items: center;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--muted);
+        cursor: pointer;
+        display: flex;
+        flex-shrink: 0;
+        font-size: 20px;
+        height: 32px;
+        justify-content: center;
+        line-height: 1;
+        width: 32px;
+    }
+    .ph-close:hover { background: var(--surface-hover); color: var(--neutral); }
+
+    /* ── Resumen de cifras ────────────────────────────────────────────────── */
+    .ph-summary {
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        padding: 14px 24px;
+    }
+    .ph-summary-item { display: flex; flex-direction: column; flex: 1 1 130px; gap: 4px; padding: 6px 0; }
+    .ph-summary-item span   { color: var(--muted);   font-size: 9px;  font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .ph-summary-item strong { color: var(--neutral); font-size: 16px; font-weight: 700; }
+
+    /* Colores semánticos modo claro — contraste ≥ 4.5:1 sobre blanco */
+    .ph-paid    { color: #047857 !important; } /* green-700  ~5.1:1 */
+    .ph-pending { color: #92400e !important; } /* amber-800  ~5.0:1 */
+
+    /* ── Tabla de abonos ──────────────────────────────────────────────────── */
+    .ph-table-wrap { flex: 1; overflow-y: auto; }
+    .ph-table { border-collapse: collapse; width: 100%; }
+    .ph-table thead {
+        background: var(--surface-muted);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    .ph-table th  { color: var(--muted);   font-size: 9px;  font-weight: 700; letter-spacing: .05em; padding: 11px 20px; text-align: left; text-transform: uppercase; }
+    .ph-table td  { border-top: 1px solid var(--border); color: var(--neutral); font-size: 13px; padding: 13px 20px; }
+    .ph-table td:first-child { color: var(--muted); font-size: 11px; width: 36px; }
+    .ph-table td strong { color: var(--neutral); font-size: 14px; font-weight: 700; }
+    .ph-table tbody tr:hover td { background: var(--surface-hover); }
+
+    .ph-empty-msg    { color: var(--muted); font-size: 13px; padding: 40px; text-align: center; }
+    .ph-loading-row td { color: var(--muted); font-size: 13px; padding: 40px; text-align: center; }
+
+    /* ── Modo oscuro ──────────────────────────────────────────────────────── */
+    /* El overlay se vuelve más opaco porque el fondo oscuro reduce el contraste del backdrop */
+    html[data-theme="dark"] .ph-overlay { background: rgba(0, 0, 0, .72); }
+
+    /* La sombra del card necesita más intensidad en dark porque dark-sobre-dark pierde contraste */
+    html[data-theme="dark"] .ph-card { box-shadow: 0 24px 64px rgba(0, 0, 0, .55); }
+
+    /* Colores semánticos modo oscuro — texto claro sobre superficie oscura, contraste ≥ 4.5:1 */
+    /* var(--success) = #70ddb2 sobre var(--surface) = #111827 → ~8.6:1 ✓              */
+    /* var(--warning) = #ffd087 sobre var(--surface) = #111827 → ~8.0:1 ✓              */
+    html[data-theme="dark"] .ph-paid    { color: var(--success) !important; }
+    html[data-theme="dark"] .ph-pending { color: var(--warning) !important; }
+
+    /* ── Responsive: bottom-sheet en móvil ───────────────────────────────── */
+    @media (max-width: 600px) {
+        .ph-overlay { align-items: flex-end; padding: 0; }
+        .ph-card    { border-radius: 18px 18px 0 0; max-height: 92vh; max-width: 100%; }
+        .ph-card::before {
+            background: var(--border);
+            border-radius: 999px;
+            content: "";
+            display: block;
+            flex-shrink: 0;
+            height: 4px;
+            margin: 8px auto 0;
+            width: 32px;
+        }
+        .ph-card-header  { padding: 14px 18px 12px; }
+        .ph-card-header h2 { font-size: 15px; }
+        .ph-summary      { padding: 10px 18px; }
+        .ph-summary-item { flex: 1 1 100px; }
+        .ph-summary-item strong { font-size: 14px; }
+        .ph-table th, .ph-table td { padding: 10px 14px; }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById("ph-modal");
+
+        const closeModal = () => {
+            modal.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+        };
+
+        modal.querySelector(".ph-close").addEventListener("click", closeModal);
+        modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.getAttribute("aria-hidden") === "false") closeModal(); });
+
+        document.addEventListener("click", async (e) => {
+            const btn = e.target.closest(".ph-history-trigger");
+            if (!btn) return;
+
+            const url = btn.dataset.historyUrl;
+            const tbody = document.getElementById("ph-tbody");
+            const empty = document.getElementById("ph-empty");
+
+            // Estado de carga
+            document.getElementById("ph-modal-sub").textContent = btn.dataset.borrower || "";
+            document.getElementById("ph-amount").textContent = "…";
+            document.getElementById("ph-total-paid").textContent = "…";
+            document.getElementById("ph-balance").textContent = "…";
+            document.getElementById("ph-status").textContent = "…";
+            empty.style.display = "none";
+            tbody.innerHTML = '<tr class="ph-loading-row"><td colspan="4">Cargando historial…</td></tr>';
+            modal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+
+            try {
+                const resp = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+                if (!resp.ok) throw new Error();
+                const data = await resp.json();
+
+                document.getElementById("ph-modal-sub").textContent = `${data.loan_code} · ${data.borrower_name}`;
+                document.getElementById("ph-amount").textContent = data.amount;
+                document.getElementById("ph-total-paid").textContent = data.total_paid;
+                document.getElementById("ph-balance").textContent = data.remaining_balance;
+                document.getElementById("ph-status").textContent = data.status;
+
+                if (data.payments.length === 0) {
+                    tbody.innerHTML = "";
+                    empty.style.display = "block";
+                } else {
+                    empty.style.display = "none";
+                    tbody.innerHTML = data.payments.map((p, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${p.payment_date}</td>
+                            <td><strong>${p.amount}</strong></td>
+                            <td>${p.notes}</td>
+                        </tr>
+                    `).join("");
+                }
+            } catch {
+                tbody.innerHTML = '<tr class="ph-loading-row"><td colspan="4">No se pudo cargar el historial.</td></tr>';
+            }
+        });
+    });
+</script>
 
 <style>
     @media (min-width: 901px) {
