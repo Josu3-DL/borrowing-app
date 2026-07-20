@@ -15,6 +15,7 @@ from .models import EXCHANGE_RATE, Loan
 
 
 MONEY_PLACES = Decimal("0.01")
+CHART_MONTH_OPTIONS = (3, 6, 12)
 SPANISH_MONTHS = (
     "",
     "Ene",
@@ -75,6 +76,14 @@ def _month_sequence(today, length=6):
     return months
 
 
+def _chart_month_count(raw_value):
+    try:
+        month_count = int(raw_value)
+    except (TypeError, ValueError):
+        return 6
+    return month_count if month_count in CHART_MONTH_OPTIONS else 6
+
+
 def _chart_points(values, width=580, height=180, top=14):
     if not values:
         return ""
@@ -92,6 +101,7 @@ def _chart_points(values, width=580, height=180, top=14):
 @require_http_methods(["GET"])
 def dashboard(request):
     today = timezone.localdate()
+    chart_month_count = _chart_month_count(request.GET.get("chart_months"))
     loans = list(
         Loan.objects.filter(owner=request.user)
         .prefetch_related("payments")
@@ -104,7 +114,7 @@ def dashboard(request):
     )
 
     month_start = date(today.year, today.month, 1)
-    months = _month_sequence(today)
+    months = _month_sequence(today, chart_month_count)
 
     pending_loans = sorted(
         (loan for loan in loans if loan.status == Loan.Status.PENDING),
@@ -165,6 +175,7 @@ def dashboard(request):
         "lent_change": selected_data["lent_change"],
         "recovered_change": selected_data["recovered_change"],
         "pending_change": 0,
+        "chart_month_count": chart_month_count,
         "month_series": selected_data["month_series"],
         "recovery_points": selected_data["recovery_points"],
         "recovery_area_points": selected_data["recovery_area_points"],
