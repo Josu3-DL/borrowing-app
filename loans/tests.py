@@ -153,9 +153,9 @@ class LoanViewTests(LoanTestMixin, TestCase):
         response = self.client.get(reverse("loans:dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["total_lent"], "$100.00")
-        self.assertEqual(response.context["total_recovered"], "$25.00")
-        self.assertEqual(response.context["total_pending"], "$75.00")
+        self.assertEqual(response.context["total_lent"], "C$3,700.00")
+        self.assertEqual(response.context["total_recovered"], "C$925.00")
+        self.assertEqual(response.context["total_pending"], "C$2,775.00")
         self.assertEqual(response.context["active_count"], 1)
         self.assertContains(response, "Visible dashboard borrower")
         self.assertNotContains(response, "Hidden dashboard borrower")
