@@ -200,6 +200,18 @@ class LoanViewTests(LoanTestMixin, TestCase):
             response,
             'aria-label="Préstamos emitidos durante los últimos 3 meses"',
         )
+        self.assertContains(
+            response,
+            'html[data-theme="dark"] .chart-period-filter select {',
+        )
+        self.assertContains(
+            response,
+            'html[data-theme="dark"] .chart-period-filter button {',
+        )
+        self.assertContains(
+            response,
+            'html[data-theme="dark"] .chart-period-filter button:hover {',
+        )
 
     def test_dashboard_defaults_to_six_months_for_invalid_chart_period(self):
         self.client.force_login(self.user)

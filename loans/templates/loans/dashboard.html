@@ -412,6 +412,19 @@
     .chart-period-filter select { background: #fbfcff; border: 1px solid #cbd2e3; border-radius: 7px; color: #475467; font-size: 10px; height: 32px; padding: 0 7px; }
     .chart-period-filter button { background: #edf2ff; border: 1px solid #cdd9f7; border-radius: 7px; color: #0756d8; cursor: pointer; font-size: 10px; font-weight: 700; height: 32px; padding: 0 9px; }
     .chart-period-filter button:hover { background: #dfe8ff; }
+    html[data-theme="dark"] .chart-period-filter select {
+        background: var(--field-background);
+        border-color: var(--border);
+        color: var(--neutral);
+    }
+    html[data-theme="dark"] .chart-period-filter button {
+        background: var(--action-secondary);
+        border-color: var(--border);
+        color: var(--primary-strong);
+    }
+    html[data-theme="dark"] .chart-period-filter button:hover {
+        background: var(--action-secondary-hover);
+    }
     .chart-legend i { background: #0756d8; border-radius: 50%; display: inline-block; height: 7px; width: 7px; }
     .desktop-bar-chart { align-items: end; border-bottom: 1px solid #e8ebf2; display: flex; gap: 18px; height: 192px; justify-content: space-around; padding: 12px 15px 0; }
     .desktop-bar-column { align-items: center; display: flex; flex: 1; flex-direction: column; height: 100%; justify-content: flex-end; }
