@@ -29,6 +29,16 @@
             --primary-hover: #044bc0;
             --primary-soft: #e8efff;
             --on-primary: #ffffff;
+            --action-primary: #0756d8;
+            --action-primary-hover: #044bc0;
+            --on-action-primary: #ffffff;
+            --action-primary-shadow: rgba(7, 86, 216, .3);
+            --action-secondary: #e4e7ec;
+            --action-secondary-hover: #d0d5dd;
+            --on-action-secondary: #475467;
+            --action-danger: #dc2626;
+            --action-danger-hover: #b91c1c;
+            --on-action-danger: #ffffff;
             --secondary: #f9fafb;
             --surface: #ffffff;
             --canvas: #f6f7fc;
@@ -56,6 +66,16 @@
             --primary-hover: #a6c2ff;
             --primary-soft: #1c3158;
             --on-primary: #0b1120;
+            --action-primary: #0756d8;
+            --action-primary-hover: #2563eb;
+            --on-action-primary: #ffffff;
+            --action-primary-shadow: rgba(7, 86, 216, .4);
+            --action-secondary: #26344b;
+            --action-secondary-hover: #344157;
+            --on-action-secondary: #d0d5dd;
+            --action-danger: #dc2626;
+            --action-danger-hover: #ef4444;
+            --on-action-danger: #ffffff;
             --secondary: #182235;
             --surface: #111827;
             --canvas: #0b1120;
@@ -183,10 +203,10 @@
         .breadcrumb strong { color: var(--neutral); }
         .button, button.primary {
             align-items: center;
-            background: var(--primary-strong);
+            background: var(--action-primary);
             border: 0;
             border-radius: 11px;
-            color: var(--on-primary);
+            color: var(--on-action-primary);
             cursor: pointer;
             display: inline-flex;
             font-weight: 700;
@@ -196,7 +216,7 @@
             padding: 0 24px;
             text-decoration: none;
         }
-        .button:hover, button.primary:hover { background: var(--primary-hover); }
+        .button:hover, button.primary:hover { background: var(--action-primary-hover); }
         .button:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
             outline: 3px solid #9bb8ff;
             outline-offset: 2px;
@@ -499,7 +519,8 @@
         .cancel-link { color: #475467; font-size: 14px; text-decoration: none; }
         .modal-footer .primary { min-height: 44px; }
         .delete-copy { color: #475467; line-height: 1.6; padding: 28px 24px; }
-        button.danger { background: var(--danger); border: 0; border-radius: 9px; color: #fff; cursor: pointer; font-weight: 700; min-height: 44px; padding: 0 18px; }
+        button.danger { background: var(--action-danger); border: 0; border-radius: 9px; color: var(--on-action-danger); cursor: pointer; font-weight: 700; min-height: 44px; padding: 0 18px; }
+        button.danger:hover { background: var(--action-danger-hover); }
         .fab { display: none; }
 
         .profile-heading { margin-bottom: 30px; }
@@ -518,7 +539,8 @@
             width: 100%;
         }
         .profile-actions { border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 22px; }
-        .secondary-button { align-items: center; background: var(--surface); border: 1px solid #cbd2e3; border-radius: 9px; color: #475467; display: inline-flex; font-weight: 600; justify-content: center; min-height: 44px; padding: 0 20px; text-decoration: none; }
+        .secondary-button { align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; color: var(--text-secondary); display: inline-flex; font-weight: 600; justify-content: center; min-height: 44px; padding: 0 20px; text-decoration: none; }
+        .secondary-button:hover { background: var(--surface-hover); }
         .profile-summary { text-align: center; }
         .profile-avatar {
             align-items: center;
@@ -654,7 +676,6 @@
         html[data-theme="dark"] .payments-pagination,
         html[data-theme="dark"] .currency-switcher,
         html[data-theme="dark"] .module-currency-switcher,
-        html[data-theme="dark"] .payments-apply-button,
         html[data-theme="dark"] .mobile-payment-counters article {
             background: var(--surface-muted);
             border-color: var(--border);
@@ -911,11 +932,11 @@
             .mobile-bottom-nav .nav-icon { font-size: 19px; text-align: center; }
             .fab {
                 align-items: center;
-                background: var(--primary-strong);
+                background: var(--action-primary);
                 border-radius: 50%;
                 bottom: 88px;
-                box-shadow: 0 8px 24px rgba(7, 86, 216, .3);
-                color: #fff;
+                box-shadow: 0 8px 24px var(--action-primary-shadow);
+                color: var(--on-action-primary);
                 display: flex;
                 font-size: 32px;
                 height: 56px;

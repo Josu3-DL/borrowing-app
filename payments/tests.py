@@ -78,6 +78,10 @@ class PaymentViewTests(TestCase):
         self.assertEqual(response.context["total_collected_month"], "$125.00")
         self.assertContains(response, 'class="payments-desktop"')
         self.assertContains(response, 'class="payments-mobile"')
+        self.assertContains(
+            response,
+            ".payments-primary-button { align-items: center; background: var(--action-primary);",
+        )
         self.assertContains(response, "Ana García")
         self.assertNotContains(response, "Hidden Person")
 

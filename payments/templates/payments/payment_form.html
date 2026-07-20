@@ -78,7 +78,7 @@
 
             <footer class="payment-modal-footer">
                 <a href="{% url 'payments:list' %}">Cancelar</a>
-                <button type="submit" id="submit-btn">Registrar pago</button>
+                <button class="primary" type="submit" id="submit-btn">Registrar pago</button>
             </footer>
         </form>
     </section>
@@ -117,8 +117,8 @@
     .payment-conversion-info strong { color: #067647; }
     .payment-conversion-info small { color: #475467; margin-left: auto; }
     .payment-modal-footer { align-items: center; border-top: 1px solid #d8ddea; display: flex; gap: 18px; justify-content: flex-end; padding: 17px 26px; }
-    .payment-modal-footer a { color: #667085; font-size: 13px; font-weight: 600; text-decoration: none; }
-    .payment-modal-footer button { background: #0756d8; border: 0; border-radius: 7px; color: #fff; cursor: pointer; font-size: 13px; font-weight: 700; min-height: 42px; padding: 0 21px; }
+    .payment-modal-footer a { color: var(--text-secondary); font-size: 13px; font-weight: 600; text-decoration: none; }
+    .payment-modal-footer button { border-radius: 7px; font-size: 13px; min-height: 42px; padding: 0 21px; }
     .payment-modal-footer button:disabled { cursor: not-allowed; opacity: .5; }
 
     @media (max-width: 900px) {

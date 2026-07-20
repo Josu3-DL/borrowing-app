@@ -121,10 +121,20 @@ class AuthenticationTests(TestCase):
             'setTheme(event.matches ? "dark" : "light", false)',
         )
         self.assertContains(response, "--on-primary: #0b1120")
+        self.assertContains(response, "--action-primary: #0756d8", count=2)
+        self.assertContains(response, "--on-action-primary: #ffffff", count=2)
+        self.assertContains(
+            response,
+            ".dashboard-primary-button { background: var(--action-primary);",
+        )
         self.assertContains(
             response,
             "color: var(--on-primary);",
-            count=3,
+            count=2,
+        )
+        self.assertContains(
+            response,
+            "color: var(--on-action-primary);",
         )
         desktop_user_start = content.index('<div class="topbar-user">')
         desktop_user_end = content.index("</div>", desktop_user_start)
