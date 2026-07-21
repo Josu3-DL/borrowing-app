@@ -101,9 +101,7 @@
                     </td>
                     <td class="money balance {% if loan.is_overdue %}overdue-balance{% endif %}">{{ loan.currency_symbol }}{{ loan.remaining_balance }}</td>
                     <td class="actions">
-                        <button type="button" class="icon-action ph-history-trigger" data-history-url="{% url 'payments:loan_payments_json' loan.pk %}" data-borrower="{{ loan.borrower_name }}" aria-label="Historial de abonos de {{ loan.borrower_name }}" title="Ver historial"><i data-lucide="clock" aria-hidden="true"></i></button>
-                        <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i></a>
-                        <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}" title="Eliminar"><i data-lucide="trash-2" aria-hidden="true"></i></a>
+                        {% include "loans/_loan_actions_menu.html" with loan=loan %}
                     </td>
                 </tr>
             {% empty %}
@@ -159,9 +157,7 @@
             </div>
             <div class="loan-card-dates"><span>Inicio: {{ loan.loan_date|date:"d/m/Y" }}</span></div>
             <div class="loan-card-actions">
-                <button type="button" class="icon-action ph-history-trigger" data-history-url="{% url 'payments:loan_payments_json' loan.pk %}" data-borrower="{{ loan.borrower_name }}" aria-label="Historial de abonos de {{ loan.borrower_name }}" title="Ver historial"><i data-lucide="clock" aria-hidden="true"></i></button>
-                <a class="icon-action" href="{% url 'loans:update' loan.pk %}" aria-label="Editar préstamo de {{ loan.borrower_name }}"><i data-lucide="pencil" aria-hidden="true"></i></a>
-                <a class="icon-action delete" href="{% url 'loans:delete' loan.pk %}" aria-label="Eliminar préstamo de {{ loan.borrower_name }}"><i data-lucide="trash-2" aria-hidden="true"></i></a>
+                {% include "loans/_loan_actions_menu.html" with loan=loan %}
             </div>
         </article>
     {% empty %}
@@ -414,6 +410,137 @@
 </script>
 
 <style>
+    /* ── Menú de acciones "..." por préstamo ─────────────────────────────── */
+    .loan-actions-menu { position: relative; width: fit-content; }
+    .loan-actions-trigger {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        border-radius: 7px;
+        color: #475467;
+        cursor: pointer;
+        display: inline-flex;
+        height: 34px;
+        justify-content: center;
+        list-style: none;
+        width: 34px;
+    }
+    .loan-actions-trigger::-webkit-details-marker,
+    .loan-actions-trigger::marker { display: none; }
+    .loan-actions-trigger:hover { background: var(--primary-soft); color: var(--primary-strong); }
+    .loan-actions-trigger:focus-visible { outline: 3px solid #9bb8ff; outline-offset: 2px; }
+    .loan-card .loan-actions-trigger { height: 32px; width: 32px; }
+
+    .loan-actions-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 14px 38px rgba(16, 24, 40, .16);
+        min-width: 190px;
+        overflow: hidden;
+        padding: 6px;
+        position: fixed;
+        z-index: 60;
+    }
+    .loan-actions-item {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        border-radius: 7px;
+        color: var(--neutral);
+        cursor: pointer;
+        display: flex;
+        font: inherit;
+        font-size: 13px;
+        gap: 10px;
+        padding: 9px 10px;
+        text-align: left;
+        text-decoration: none;
+        width: 100%;
+    }
+    .loan-actions-item:hover { background: var(--surface-hover); }
+    .loan-actions-item.is-danger { color: var(--danger); }
+    .loan-actions-item.is-danger:hover { background: var(--danger-soft); }
+    .loan-actions-item.is-disabled { color: var(--muted); cursor: not-allowed; }
+    .loan-actions-item.is-disabled:hover { background: transparent; }
+
+    html[data-theme="dark"] .loan-actions-panel { box-shadow: 0 18px 46px rgba(0, 0, 0, .5); }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const menus = Array.from(document.querySelectorAll(".loan-actions-menu"));
+        if (!menus.length) return;
+
+        function closeMenu(details) {
+            if (!details.open) return;
+            details.open = false;
+        }
+
+        function closeAllExcept(except) {
+            menus.forEach((details) => { if (details !== except) closeMenu(details); });
+        }
+
+        function positionPanel(details) {
+            const summary = details.querySelector("summary");
+            const panel = details.querySelector(".loan-actions-panel");
+            if (!summary || !panel) return;
+
+            const rect = summary.getBoundingClientRect();
+            const panelWidth = panel.offsetWidth || 190;
+            const panelHeight = panel.offsetHeight || 0;
+            const margin = 8;
+
+            let left = rect.right - panelWidth;
+            left = Math.max(margin, Math.min(left, window.innerWidth - panelWidth - margin));
+
+            let top = rect.bottom + 6;
+            if (top + panelHeight > window.innerHeight - margin) {
+                top = Math.max(margin, rect.top - panelHeight - 6);
+            }
+
+            panel.style.left = `${left}px`;
+            panel.style.top = `${top}px`;
+        }
+
+        menus.forEach((details) => {
+            const summary = details.querySelector("summary");
+            details.addEventListener("toggle", () => {
+                if (details.open) {
+                    closeAllExcept(details);
+                    positionPanel(details);
+                }
+                if (summary) summary.setAttribute("aria-expanded", String(details.open));
+            });
+        });
+
+        document.addEventListener("click", (event) => {
+            menus.forEach((details) => {
+                if (details.open && !details.contains(event.target)) closeMenu(details);
+            });
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
+            const openMenu = menus.find((details) => details.open);
+            if (!openMenu) return;
+            closeMenu(openMenu);
+            openMenu.querySelector("summary").focus();
+        });
+
+        document.addEventListener("click", (event) => {
+            const item = event.target.closest(".loan-actions-item");
+            if (!item || item.getAttribute("aria-disabled") === "true") return;
+            const details = item.closest(".loan-actions-menu");
+            if (details) closeMenu(details);
+        });
+
+        window.addEventListener("resize", () => closeAllExcept(null));
+        window.addEventListener("scroll", () => closeAllExcept(null), true);
+    });
+</script>
+
+<style>
     @media (min-width: 901px) {
         body.loans-page .page-main {
             padding: 88px 24px 44px;
@@ -612,7 +739,7 @@
             min-width: 0;
         }
 
-        body.loans-page .loan-table .icon-action {
+        body.loans-page .loan-table .loan-actions-trigger {
             height: 28px;
             width: 28px;
         }
