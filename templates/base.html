@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="es">
+<html lang="es" data-exchange-rate="{{ EXCHANGE_RATE }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1694,7 +1694,7 @@
             window.setTimeout(function () { dismissToast(toast); }, 6000);
         });
         window.applyDisplayCurrency = function (currency) {
-            const rate = 37;
+            const rate = Number(document.documentElement.dataset.exchangeRate);
             document.querySelectorAll("[data-money-value]").forEach(function (element) {
                 let amount = Number(element.dataset.moneyValue);
                 if (element.dataset.moneyCurrency !== currency) {

@@ -442,16 +442,33 @@ class LoanViewTests(LoanTestMixin, TestCase):
 
         response = self.client.post(
             reverse("loans:update", args=[loan.pk]),
-            self.loan_data(
-                borrower_name="Updated name",
-                status=Loan.Status.PAID,
-            ),
+            self.loan_data(borrower_name="Updated name"),
         )
 
         self.assertRedirects(response, reverse("loans:list"))
         loan.refresh_from_db()
         self.assertEqual(loan.borrower_name, "Updated name")
-        self.assertEqual(loan.status, Loan.Status.PAID)
+
+    def test_updating_loan_ignores_a_submitted_status_because_it_is_derived(self):
+        """`status` is not a LoanForm field: it is only ever derived from
+        recorded payments (see Loan.recompute_status). Submitting a status
+        value must have no effect."""
+        loan = self.create_loan(status=Loan.Status.PENDING)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("loans:update", args=[loan.pk]),
+            self.loan_data(status=Loan.Status.PAID),
+        )
+
+        self.assertRedirects(response, reverse("loans:list"))
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, Loan.Status.PENDING)
+
+    def test_loan_form_has_no_status_field(self):
+        form = LoanForm()
+
+        self.assertNotIn("status", form.fields)
 
     def test_user_cannot_update_another_users_loan(self):
         loan = self.create_loan(owner=self.other_user)
@@ -500,3 +517,143 @@ class LoanViewTests(LoanTestMixin, TestCase):
         self.assertContains(response, "Panel")
         self.assertNotContains(response, "Dashboard")
         self.assertNotContains(response, "Reportes")
+
+
+class LoanDomainInvariantTests(LoanTestMixin, TestCase):
+    """Characterizes the invariants introduced by the domain refactor:
+    a loan's currency locks once it has a payment, its amount can't drop
+    below what has been paid, and both are enforced again by the
+    transactional service even if a caller bypasses the form."""
+
+    def test_currency_cannot_change_once_a_payment_exists(self):
+        loan = self.create_loan(currency=Loan.Currency.NIO, amount="1000.00")
+        Payment.objects.create(
+            loan=loan,
+            amount=Decimal("100.00"),
+            currency=Payment.Currency.NIO,
+            payment_date=date(2026, 7, 5),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("loans:update", args=[loan.pk]),
+            self.loan_data(currency=Loan.Currency.USD, amount="1000.00"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("currency", response.context["form"].errors or {})
+        loan.refresh_from_db()
+        self.assertEqual(loan.currency, Loan.Currency.NIO)
+
+    def test_amount_cannot_drop_below_what_has_already_been_paid(self):
+        loan = self.create_loan(currency=Loan.Currency.NIO, amount="1000.00")
+        Payment.objects.create(
+            loan=loan,
+            amount=Decimal("600.00"),
+            currency=Payment.Currency.NIO,
+            payment_date=date(2026, 7, 5),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("loans:update", args=[loan.pk]),
+            self.loan_data(currency=Loan.Currency.NIO, amount="500.00"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        loan.refresh_from_db()
+        self.assertEqual(loan.amount, Decimal("1000.00"))
+
+    def test_amount_can_be_reduced_down_to_exactly_the_amount_paid(self):
+        loan = self.create_loan(currency=Loan.Currency.NIO, amount="1000.00")
+        Payment.objects.create(
+            loan=loan,
+            amount=Decimal("600.00"),
+            currency=Payment.Currency.NIO,
+            payment_date=date(2026, 7, 5),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("loans:update", args=[loan.pk]),
+            self.loan_data(currency=Loan.Currency.NIO, amount="600.00"),
+        )
+
+        self.assertRedirects(response, reverse("loans:list"))
+        loan.refresh_from_db()
+        self.assertEqual(loan.amount, Decimal("600.00"))
+        self.assertEqual(loan.status, Loan.Status.PAID)
+
+    def test_service_rejects_currency_change_even_if_the_form_is_bypassed(self):
+        from django.core.exceptions import ValidationError
+
+        from .services import update_loan
+
+        loan = self.create_loan(currency=Loan.Currency.NIO, amount="1000.00")
+        Payment.objects.create(
+            loan=loan,
+            amount=Decimal("50.00"),
+            currency=Payment.Currency.NIO,
+            payment_date=date(2026, 7, 5),
+        )
+
+        with self.assertRaises(ValidationError):
+            update_loan(
+                loan=loan,
+                cleaned_data={
+                    "borrower_name": loan.borrower_name,
+                    "borrower_phone": loan.borrower_phone,
+                    "borrower_email": loan.borrower_email,
+                    "amount": loan.amount,
+                    "currency": Loan.Currency.USD,
+                    "loan_date": loan.loan_date,
+                    "due_date": loan.due_date,
+                },
+            )
+        loan.refresh_from_db()
+        self.assertEqual(loan.currency, Loan.Currency.NIO)
+
+
+class MoneyCoreTests(TestCase):
+    """The shared money module is the single source of truth for currency
+    conversion, rounding and formatting: exercise both directions and the
+    rounding boundary explicitly."""
+
+    def test_convert_same_currency_only_quantizes(self):
+        from borrowing_app import money
+
+        self.assertEqual(
+            money.convert(Decimal("10"), money.Currency.USD, money.Currency.USD),
+            Decimal("10.00"),
+        )
+
+    def test_convert_usd_to_nio_multiplies_by_fixed_rate(self):
+        from borrowing_app import money
+
+        self.assertEqual(
+            money.convert(Decimal("10.00"), money.Currency.USD, money.Currency.NIO),
+            Decimal("370.00"),
+        )
+
+    def test_convert_nio_to_usd_divides_by_fixed_rate(self):
+        from borrowing_app import money
+
+        self.assertEqual(
+            money.convert(Decimal("370.00"), money.Currency.NIO, money.Currency.USD),
+            Decimal("10.00"),
+        )
+
+    def test_convert_rounds_half_up_at_the_two_decimal_boundary(self):
+        from borrowing_app import money
+
+        # 1 / 37 = 0.027027... -> rounds to 0.03 (half up at the 3rd decimal).
+        self.assertEqual(
+            money.convert(Decimal("1"), money.Currency.NIO, money.Currency.USD),
+            Decimal("0.03"),
+        )
+
+    def test_format_money_uses_the_right_symbol(self):
+        from borrowing_app import money
+
+        self.assertEqual(money.format_money(Decimal("1234.5"), money.Currency.USD), "$1,234.50")
+        self.assertEqual(money.format_money(Decimal("1234.5"), money.Currency.NIO), "C$1,234.50")

@@ -1,150 +1,49 @@
-import json
-from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from loans.models import EXCHANGE_RATE, Loan
+from borrowing_app import money
+from borrowing_app.reporting import percent_change
+from loans.models import Loan
 
+from . import selectors, services
 from .forms import PaymentFilterForm, PaymentForm
 from .models import Payment
 
 
-MONEY_PLACES = Decimal("0.01")
-
-
-def _to_usd(amount, currency):
-    amount = Decimal(amount)
-    if currency == Payment.Currency.NIO:
-        amount /= EXCHANGE_RATE
-    return amount.quantize(MONEY_PLACES, rounding=ROUND_HALF_UP)
-
-
-def _format_money(amount, currency=Payment.Currency.USD):
-    symbol = "$" if currency == Payment.Currency.USD else "C$"
-    return f"{symbol}{Decimal(amount):,.2f}"
-
-
-def _percent_change(current, previous):
-    if previous == 0:
-        return 100 if current > 0 else 0
-    return int(((current - previous) / previous * 100).quantize(Decimal("1")))
-
-
 def _payment_list_context(request):
     today = timezone.localdate()
-    all_payments = list(
-        Payment.objects.filter(loan__owner=request.user)
-        .select_related("loan")
-        .prefetch_related("loan__payments")
-        .order_by("-payment_date", "-created_at")
-    )
-    filtered_payments = Payment.objects.filter(
-        loan__owner=request.user
-    ).select_related("loan").prefetch_related("loan__payments")
     filter_form = PaymentFilterForm(request.GET or None)
 
-    if filter_form.is_valid():
-        borrower_name = filter_form.cleaned_data["borrower_name"]
-        currency = filter_form.cleaned_data["currency"]
-        date_from = filter_form.cleaned_data["date_from"]
-        date_to = filter_form.cleaned_data["date_to"]
+    filters = filter_form.cleaned_data if filter_form.is_valid() else None
+    payments = selectors.filtered_payments(request.user, filters=filters)
+    paginator, page_obj = selectors.paginate_payment_rows(
+        payments, page_number=request.GET.get("page")
+    )
 
-        if borrower_name:
-            filtered_payments = filtered_payments.filter(
-                loan__borrower_name__icontains=borrower_name
-            )
-        if currency:
-            filtered_payments = filtered_payments.filter(currency=currency)
-        if date_from:
-            filtered_payments = filtered_payments.filter(
-                payment_date__gte=date_from
-            )
-        if date_to:
-            filtered_payments = filtered_payments.filter(
-                payment_date__lte=date_to
-            )
+    current_total, previous_total = selectors.monthly_collected_totals(
+        request.user, today=today
+    )
+    status_counts = selectors.loan_status_counts(request.user, today=today)
 
-    payment_rows = []
-    for payment in filtered_payments:
-        names = payment.loan.borrower_name.split()
-        initials = "".join(name[0] for name in names[:2]).upper()
-        payment_rows.append(
-            {
-                "payment": payment,
-                "initials": initials,
-                "amount": _format_money(payment.amount, payment.currency),
-                "amount_value": payment.amount,
-                "amount_currency": payment.currency,
-                "balance": _format_money(
-                    payment.loan.remaining_balance,
-                    payment.loan.currency,
-                ),
-                "balance_value": payment.loan.remaining_balance,
-                "balance_currency": payment.loan.currency,
-                "completed": payment.loan.status == Loan.Status.PAID,
-            }
-        )
-
-    paginator = Paginator(payment_rows, 8)
-    page_obj = paginator.get_page(request.GET.get("page"))
     query_params = request.GET.copy()
     query_params.pop("page", None)
-
-    current_month_start = date(today.year, today.month, 1)
-    previous_month_end = current_month_start - timedelta(days=1)
-    previous_month_start = date(
-        previous_month_end.year,
-        previous_month_end.month,
-        1,
-    )
-    current_total = sum(
-        (
-            _to_usd(payment.amount, payment.currency)
-            for payment in all_payments
-            if payment.payment_date >= current_month_start
-        ),
-        Decimal("0"),
-    )
-    previous_total = sum(
-        (
-            _to_usd(payment.amount, payment.currency)
-            for payment in all_payments
-            if previous_month_start
-            <= payment.payment_date
-            <= previous_month_end
-        ),
-        Decimal("0"),
-    )
-    owner_loans = Loan.objects.filter(owner=request.user)
-    person_choices = (
-        owner_loans.order_by("borrower_name")
-        .values_list("borrower_name", flat=True)
-        .distinct()
-    )
 
     return {
         "filter_form": filter_form,
         "page_obj": page_obj,
         "payment_rows": page_obj.object_list,
-        "total_collected_month": _format_money(current_total),
+        "total_collected_month": money.format_money(current_total, Payment.Currency.USD),
         "total_collected_month_value": current_total,
-        "collected_change": _percent_change(current_total, previous_total),
-        "pending_count": owner_loans.filter(
-            status=Loan.Status.PENDING
-        ).count(),
-        "overdue_count": owner_loans.filter(
-            status=Loan.Status.PENDING,
-            due_date__lt=today,
-        ).count(),
-        "person_choices": person_choices,
+        "collected_change": percent_change(current_total, previous_total),
+        "pending_count": status_counts["pending_count"],
+        "overdue_count": status_counts["overdue_count"],
+        "person_choices": selectors.person_choices(request.user),
         "selected_person": request.GET.get("borrower_name", ""),
         "filter_query": query_params.urlencode(),
     }
@@ -153,11 +52,7 @@ def _payment_list_context(request):
 @login_required
 @require_http_methods(["GET"])
 def payment_list(request):
-    return render(
-        request,
-        "payments/payment_list.html",
-        _payment_list_context(request),
-    )
+    return render(request, "payments/payment_list.html", _payment_list_context(request))
 
 
 def _safe_next_url(candidate):
@@ -178,38 +73,50 @@ def payment_create(request):
 
     form = PaymentForm(request.user, request.POST or None, initial=initial)
 
-    # Datos de prestamos para conversion JS en tiempo real
-    loans_qs = Loan.objects.filter(owner=request.user).prefetch_related("payments")
+    # Datos de prestamos para conversion JS en tiempo real.
+    loans_qs = Loan.objects.owned_by(request.user).prefetch_related("payments")
     loan_data = {
-        str(l.pk): {
-            "currency": l.currency,
-            "symbol": l.currency_symbol,
-            "amount": str(l.amount),
-            "balance": str(l.remaining_balance),
-            "borrower": l.borrower_name,
-            "status": l.status,
+        str(loan.pk): {
+            "currency": loan.currency,
+            "symbol": loan.currency_symbol,
+            "amount": str(loan.amount),
+            "balance": str(loan.remaining_balance),
+            "borrower": loan.borrower_name,
+            "status": loan.status,
         }
-        for l in loans_qs
+        for loan in loans_qs
     }
 
     if request.method == "POST" and form.is_valid():
-        payment = form.save()
-        loan = payment.loan
-        loan.sync_status()
-        sym = payment.currency_symbol
-        messages.success(request, f"Abono de {sym}{payment.amount} {payment.currency} registrado correctamente.")
-        if loan.status == Loan.Status.PAID:
-            messages.success(request, f"El prestamo de {loan.borrower_name} ha quedado completamente pagado!")
-        return redirect(next_url)
+        try:
+            payment = services.create_payment(
+                user=request.user, cleaned_data=form.cleaned_data
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            loan = payment.loan
+            sym = payment.currency_symbol
+            messages.success(
+                request,
+                f"Abono de {sym}{payment.amount} {payment.currency} registrado correctamente.",
+            )
+            if loan.status == Loan.Status.PAID:
+                messages.success(
+                    request,
+                    f"El prestamo de {loan.borrower_name} ha quedado completamente pagado!",
+                )
+            return redirect(next_url)
 
     context = _payment_list_context(request)
-    context.update({
-        "form": form,
-        "title": "Registrar abono",
-        "loan_data_json": json.dumps(loan_data),
-        "exchange_rate": 37,
-        "next_url": next_url,
-    })
+    context.update(
+        {
+            "form": form,
+            "title": "Registrar abono",
+            "loan_data": loan_data,
+            "next_url": next_url,
+        }
+    )
     return render(request, "payments/payment_form.html", context)
 
 
@@ -217,32 +124,32 @@ def payment_create(request):
 @require_http_methods(["GET"])
 def loan_payments_json(request, loan_pk):
     """Devuelve el historial de abonos de un préstamo como JSON."""
-    loan = get_object_or_404(Loan, pk=loan_pk, owner=request.user)
+    loan = get_object_or_404(Loan.objects.owned_by(request.user), pk=loan_pk)
     payments = list(loan.payments.all().order_by("-payment_date", "-created_at"))
-    return JsonResponse({
-        "loan_code": f"LN-{loan.pk:04d}",
-        "borrower_name": loan.borrower_name,
-        "amount": f"{loan.currency_symbol}{loan.amount:,.2f}",
-        "total_paid": f"{loan.currency_symbol}{loan.total_paid:,.2f}",
-        "remaining_balance": f"{loan.currency_symbol}{loan.remaining_balance:,.2f}",
-        "status": loan.get_status_display(),
-        "payments": [
-            {
-                "amount": f"{p.currency_symbol}{p.amount:,.2f}",
-                "payment_date": p.payment_date.strftime("%d %b %Y"),
-                "notes": p.notes if p.notes else "—",
-            }
-            for p in payments
-        ],
-    })
+    return JsonResponse(
+        {
+            "loan_code": f"LN-{loan.pk:04d}",
+            "borrower_name": loan.borrower_name,
+            "amount": f"{loan.currency_symbol}{loan.amount:,.2f}",
+            "total_paid": f"{loan.currency_symbol}{loan.total_paid:,.2f}",
+            "remaining_balance": f"{loan.currency_symbol}{loan.remaining_balance:,.2f}",
+            "status": loan.get_status_display(),
+            "payments": [
+                {
+                    "amount": f"{p.currency_symbol}{p.amount:,.2f}",
+                    "payment_date": p.payment_date.strftime("%d %b %Y"),
+                    "notes": p.notes if p.notes else "—",
+                }
+                for p in payments
+            ],
+        }
+    )
 
 
 @login_required
 @require_http_methods(["POST"])
 def payment_delete(request, pk):
-    payment = get_object_or_404(Payment, pk=pk, loan__owner=request.user)
-    loan = payment.loan
-    payment.delete()
-    loan.sync_status()
+    payment = get_object_or_404(Payment.objects.owned_by(request.user), pk=pk)
+    services.delete_payment(user=request.user, payment=payment)
     messages.success(request, "Abono eliminado correctamente.")
     return redirect("payments:list")

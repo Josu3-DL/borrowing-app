@@ -3,6 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
 from borrowing_app.form_fields import PhoneField
 
+from .domain import validate_email_is_available
 from .models import User
 
 
@@ -54,12 +55,7 @@ class RegistrationForm(UserCreationForm):
         }
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError(
-                "Ya existe una cuenta con este correo electrónico."
-            )
-        return email
+        return validate_email_is_available(self.cleaned_data["email"])
 
 
 class LoginForm(AuthenticationForm):
@@ -115,13 +111,6 @@ class ProfileForm(forms.ModelForm):
         }
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
-        if (
-            User.objects.filter(email__iexact=email)
-            .exclude(pk=self.instance.pk)
-            .exists()
-        ):
-            raise forms.ValidationError(
-                "Ya existe una cuenta con este correo electrónico."
-            )
-        return email
+        return validate_email_is_available(
+            self.cleaned_data["email"], exclude_pk=self.instance.pk
+        )
