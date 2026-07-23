@@ -1,7 +1,9 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from borrowing_app.form_fields import PhoneField
 
+from .domain import validate_loan_amount_and_currency_change
 from .models import Loan
 
 
@@ -59,6 +61,9 @@ class LoanForm(forms.ModelForm):
 
     class Meta:
         model = Loan
+        # `status` is intentionally excluded: it is a derived value, kept
+        # in sync exclusively by loans.services / payments.services from
+        # the recorded payments. See Loan.recompute_status.
         fields = (
             "borrower_name",
             "borrower_phone",
@@ -67,7 +72,6 @@ class LoanForm(forms.ModelForm):
             "currency",
             "loan_date",
             "due_date",
-            "status",
         )
         widgets = {
             "borrower_name": forms.TextInput(
@@ -86,3 +90,16 @@ class LoanForm(forms.ModelForm):
                 attrs={"type": "date"}, format="%Y-%m-%d"
             ),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        amount = cleaned_data.get("amount")
+        currency = cleaned_data.get("currency")
+        if amount is not None and currency:
+            try:
+                validate_loan_amount_and_currency_change(
+                    self.instance, new_amount=amount, new_currency=currency
+                )
+            except ValidationError as exc:
+                self.add_error(None, exc)
+        return cleaned_data

@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["env", "*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["borrowing_app", "loans", "payments", "users"]
+
+[tool.coverage.run]
+source = ["borrowing_app", "loans", "payments", "users"]
+omit = ["*/migrations/*", "*/tests.py", "manage.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

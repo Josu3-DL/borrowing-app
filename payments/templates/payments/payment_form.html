@@ -143,10 +143,11 @@
     }
 </style>
 
+{{ loan_data|json_script:"loan-data" }}
 <script>
 (function () {
-    const rate = {{ exchange_rate }};
-    const loanData = {{ loan_data_json|safe }};
+    const rate = Number(document.documentElement.dataset.exchangeRate);
+    const loanData = JSON.parse(document.getElementById("loan-data").textContent);
     const loanSelect = document.getElementById("id_loan");
     const currencySelect = document.getElementById("id_currency");
     const amountInput = document.getElementById("id_amount");

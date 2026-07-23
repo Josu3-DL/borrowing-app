@@ -388,19 +388,37 @@
                 document.getElementById("ph-balance").textContent = data.remaining_balance;
                 document.getElementById("ph-status").textContent = data.status;
 
+                tbody.innerHTML = "";
                 if (data.payments.length === 0) {
-                    tbody.innerHTML = "";
                     empty.style.display = "block";
                 } else {
                     empty.style.display = "none";
-                    tbody.innerHTML = data.payments.map((p, i) => `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${p.payment_date}</td>
-                            <td><strong>${p.amount}</strong></td>
-                            <td>${p.notes}</td>
-                        </tr>
-                    `).join("");
+                    // Construido con nodos de DOM y textContent (no innerHTML)
+                    // porque `notes` es texto libre ingresado por el usuario:
+                    // insertarlo como HTML permitiria XSS almacenado.
+                    data.payments.forEach((p, i) => {
+                        const row = document.createElement("tr");
+
+                        const indexCell = document.createElement("td");
+                        indexCell.textContent = String(i + 1);
+                        row.appendChild(indexCell);
+
+                        const dateCell = document.createElement("td");
+                        dateCell.textContent = p.payment_date;
+                        row.appendChild(dateCell);
+
+                        const amountCell = document.createElement("td");
+                        const amountStrong = document.createElement("strong");
+                        amountStrong.textContent = p.amount;
+                        amountCell.appendChild(amountStrong);
+                        row.appendChild(amountCell);
+
+                        const notesCell = document.createElement("td");
+                        notesCell.textContent = p.notes;
+                        row.appendChild(notesCell);
+
+                        tbody.appendChild(row);
+                    });
                 }
             } catch {
                 tbody.innerHTML = '<tr class="ph-loading-row"><td colspan="4">No se pudo cargar el historial.</td></tr>';

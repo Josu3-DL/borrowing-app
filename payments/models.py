@@ -3,11 +3,18 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from borrowing_app import money
+
+
+class PaymentQuerySet(models.QuerySet):
+    def owned_by(self, user):
+        """Central place for per-user isolation of payments (via their loan)."""
+        return self.filter(loan__owner=user)
+
 
 class Payment(models.Model):
-    class Currency(models.TextChoices):
-        USD = "USD", "Dolar (USD)"
-        NIO = "NIO", "Cordoba (NIO)"
+    # Single source of truth for supported currencies lives in borrowing_app.money.
+    Currency = money.Currency
 
     loan = models.ForeignKey(
         "loans.Loan",
@@ -31,13 +38,19 @@ class Payment(models.Model):
     notes = models.TextField("notas", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = PaymentQuerySet.as_manager()
+
     class Meta:
         ordering = ("-payment_date", "-created_at")
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(amount__gt=0),
                 name="payments_payment_amount_positive",
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(currency__in=tuple(Currency.values)),
+                name="payments_payment_currency_valid",
+            ),
         ]
 
     def __str__(self):
@@ -46,4 +59,4 @@ class Payment(models.Model):
 
     @property
     def currency_symbol(self):
-        return "$" if self.currency == self.Currency.USD else "C$"
+        return money.symbol_for(self.currency)

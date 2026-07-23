@@ -201,3 +201,83 @@ class PaymentViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Payment.objects.exists())
         self.assertIn("loan", response.context["form"].errors)
+
+
+class PaymentServiceTests(TestCase):
+    """The service layer is the final authority on payment invariants: it
+    must reject an overpay/already-paid loan even if a caller bypasses
+    PaymentForm.clean() entirely, and it must keep Loan.status in sync."""
+
+    password = "SecurePassword2026!"
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="service-owner",
+            email="service-owner@example.com",
+            password=self.password,
+        )
+        today = timezone.localdate()
+        self.loan = Loan.objects.create(
+            owner=self.user,
+            borrower_name="Sofia Reyes",
+            amount=Decimal("200.00"),
+            currency=Loan.Currency.USD,
+            loan_date=today - timedelta(days=10),
+            due_date=today + timedelta(days=20),
+        )
+
+    def test_create_payment_rejects_overpay_regardless_of_form_validation(self):
+        from django.core.exceptions import ValidationError
+
+        from .services import create_payment
+
+        with self.assertRaises(ValidationError):
+            create_payment(
+                user=self.user,
+                cleaned_data={
+                    "loan": self.loan,
+                    "amount": Decimal("500.00"),
+                    "currency": Payment.Currency.USD,
+                    "payment_date": timezone.localdate(),
+                    "notes": "",
+                },
+            )
+        self.assertFalse(Payment.objects.exists())
+
+    def test_create_payment_marks_loan_paid_when_balance_reaches_zero(self):
+        from .services import create_payment
+
+        create_payment(
+            user=self.user,
+            cleaned_data={
+                "loan": self.loan,
+                "amount": Decimal("200.00"),
+                "currency": Payment.Currency.USD,
+                "payment_date": timezone.localdate(),
+                "notes": "",
+            },
+        )
+
+        self.loan.refresh_from_db()
+        self.assertEqual(self.loan.status, Loan.Status.PAID)
+
+    def test_deleting_the_only_payment_reopens_the_loan(self):
+        from .services import create_payment, delete_payment
+
+        payment = create_payment(
+            user=self.user,
+            cleaned_data={
+                "loan": self.loan,
+                "amount": Decimal("200.00"),
+                "currency": Payment.Currency.USD,
+                "payment_date": timezone.localdate(),
+                "notes": "",
+            },
+        )
+        self.loan.refresh_from_db()
+        self.assertEqual(self.loan.status, Loan.Status.PAID)
+
+        delete_payment(user=self.user, payment=payment)
+
+        self.loan.refresh_from_db()
+        self.assertEqual(self.loan.status, Loan.Status.PENDING)

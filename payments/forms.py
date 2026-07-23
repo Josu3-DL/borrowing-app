@@ -1,9 +1,9 @@
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
 
 from django import forms
 
-from loans.models import EXCHANGE_RATE, Loan
+from loans.domain import validate_payment_amount
+from loans.models import Loan
 
 from .models import Payment
 
@@ -44,8 +44,8 @@ class PaymentFilterForm(forms.Form):
 class PaymentForm(forms.ModelForm):
     def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        qs = Loan.objects.filter(
-            owner=user, status=Loan.Status.PENDING
+        qs = Loan.objects.owned_by(user).filter(
+            status=Loan.Status.PENDING
         ).order_by("borrower_name")
         self.fields["loan"].queryset = qs
         self.fields["loan"].label = "Seleccionar préstamo"
@@ -93,33 +93,13 @@ class PaymentForm(forms.ModelForm):
         if not loan or not amount or not currency:
             return cleaned_data
 
-        # Regla 1: no permitir abonar a un prestamo ya pagado
-        if loan.status == Loan.Status.PAID:
-            raise forms.ValidationError(
-                f"El prestamo de {loan.borrower_name} ya esta completamente pagado. "
-                "No se pueden registrar mas abonos."
-            )
-
-        # Regla 2: convertir abono a la moneda del prestamo y comparar con saldo
-        if loan.currency == currency:
-            amount_in_loan_cur = amount
-        elif loan.currency == "USD" and currency == "NIO":
-            amount_in_loan_cur = (amount / EXCHANGE_RATE).quantize(
-                Decimal("0.01"), rounding=ROUND_HALF_UP
-            )
-        else:  # prestamo NIO, abono USD
-            amount_in_loan_cur = (amount * EXCHANGE_RATE).quantize(
-                Decimal("0.01"), rounding=ROUND_HALF_UP
-            )
-
-        balance = loan.remaining_balance
-        if amount_in_loan_cur > balance:
-            sym = loan.currency_symbol
-            pay_sym = "$" if currency == "USD" else "C$"
-            raise forms.ValidationError(
-                f"El abono de {pay_sym}{amount} {currency} equivale a "
-                f"{sym}{amount_in_loan_cur} {loan.currency}, "
-                f"pero el saldo restante es solo {sym}{balance} {loan.currency}."
-            )
+        # Validacion amigable y temprana. La autoridad final sobre estas
+        # mismas reglas vive en payments.services.create_payment, que las
+        # vuelve a aplicar dentro de una transaccion con el prestamo
+        # bloqueado.
+        try:
+            validate_payment_amount(loan, amount, currency)
+        except forms.ValidationError as exc:
+            self.add_error(None, exc)
 
         return cleaned_data
