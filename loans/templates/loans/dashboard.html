@@ -172,14 +172,8 @@
 
 <section class="dashboard-mobile" aria-labelledby="mobile-dashboard-title">
     <header class="mobile-dashboard-heading">
-        <div>
-            <h1 id="mobile-dashboard-title">Hola, {{ user.first_name|default:user.username }}</h1>
-            <p>Aquí tienes el resumen de tus préstamos hoy.</p>
-        </div>
-        <div class="currency-switcher mobile-currency-switcher" role="group" aria-label="Moneda">
-            <button type="button" class="active" data-currency="NIO" aria-pressed="true">C$</button>
-            <button type="button" data-currency="USD" aria-pressed="false">$</button>
-        </div>
+        <h1 id="mobile-dashboard-title">Hola, {{ user.first_name|default:user.username }}</h1>
+        <p>Aquí tienes el resumen de tus préstamos hoy.</p>
     </header>
 
     <article class="mobile-total-card">
@@ -500,11 +494,9 @@
         body.dashboard-page .mobile-bottom-nav { height: 62px; }
         .dashboard-desktop { display: none; }
         .dashboard-mobile { display: block; margin: 0 auto; max-width: 520px; }
-        .mobile-dashboard-heading { align-items: center; display: flex; justify-content: space-between; margin: 2px 0 17px; }
+        .mobile-dashboard-heading { margin: 2px 0 17px; }
         .mobile-dashboard-heading h1 { font-size: 19px; letter-spacing: -.035em; margin: 0 0 3px; }
         .mobile-dashboard-heading p { color: #667085; font-size: 10px; margin: 0; }
-        .mobile-currency-switcher { flex-shrink: 0; }
-        .mobile-currency-switcher button { font-size: 11px; min-height: 30px; padding: 0 9px; }
         .mobile-total-card { align-items: center; background: #0756d8; border-radius: 12px; color: #fff; display: flex; justify-content: space-between; min-height: 104px; overflow: hidden; padding: 16px; position: relative; }
         .mobile-total-card span { display: block; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; }
         .mobile-total-card strong { display: block; font-size: 26px; letter-spacing: -.035em; margin: 4px 0 8px; }
