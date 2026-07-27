@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: borrowing-app
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn borrowing_app.wsgi:application"
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: borrowing-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: "3.14.0"
+
+databases:
+  - name: borrowing-db
+    databaseName: borrowing_db
+    plan: free
