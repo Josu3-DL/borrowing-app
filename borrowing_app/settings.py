@@ -2,16 +2,6 @@
 Django settings for borrowing_app project.
 """
 
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-SECRET_KEY = 'django-insecure-ng5cquw!%&9io&%m_0e%th)fx^bu^2gq6^k3v!sf_a%pn_k)5b'
-
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
 import os
 from pathlib import Path
 
@@ -48,7 +38,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # serve static files in production
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -75,13 +65,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'borrowing_app.wsgi.application'
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
 # ---------------------------------------------------------------------------
 # Database
@@ -112,9 +95,6 @@ LANGUAGE_CODE = 'es'
 TIME_ZONE = 'America/Managua'
 USE_I18N = True
 USE_TZ = True
-
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # ---------------------------------------------------------------------------
 # Static files (WhiteNoise)
