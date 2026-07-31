@@ -5,7 +5,9 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
@@ -158,10 +160,23 @@ def payment_list(request):
     )
 
 
+def _safe_next_url(candidate):
+    """Restringe el redirect posterior al registro de un abono a rutas conocidas."""
+    allowed = {reverse("payments:list"), reverse("loans:list")}
+    return candidate if candidate in allowed else reverse("payments:list")
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def payment_create(request):
-    form = PaymentForm(request.user, request.POST or None)
+    next_url = _safe_next_url(request.POST.get("next") or request.GET.get("next"))
+
+    initial = {}
+    preselected_loan = request.GET.get("loan")
+    if request.method == "GET" and preselected_loan:
+        initial["loan"] = preselected_loan
+
+    form = PaymentForm(request.user, request.POST or None, initial=initial)
 
     # Datos de prestamos para conversion JS en tiempo real
     loans_qs = Loan.objects.filter(owner=request.user).prefetch_related("payments")
@@ -185,7 +200,7 @@ def payment_create(request):
         messages.success(request, f"Abono de {sym}{payment.amount} {payment.currency} registrado correctamente.")
         if loan.status == Loan.Status.PAID:
             messages.success(request, f"El prestamo de {loan.borrower_name} ha quedado completamente pagado!")
-        return redirect("payments:list")
+        return redirect(next_url)
 
     context = _payment_list_context(request)
     context.update({
@@ -193,8 +208,33 @@ def payment_create(request):
         "title": "Registrar abono",
         "loan_data_json": json.dumps(loan_data),
         "exchange_rate": 37,
+        "next_url": next_url,
     })
     return render(request, "payments/payment_form.html", context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def loan_payments_json(request, loan_pk):
+    """Devuelve el historial de abonos de un préstamo como JSON."""
+    loan = get_object_or_404(Loan, pk=loan_pk, owner=request.user)
+    payments = list(loan.payments.all().order_by("-payment_date", "-created_at"))
+    return JsonResponse({
+        "loan_code": f"LN-{loan.pk:04d}",
+        "borrower_name": loan.borrower_name,
+        "amount": f"{loan.currency_symbol}{loan.amount:,.2f}",
+        "total_paid": f"{loan.currency_symbol}{loan.total_paid:,.2f}",
+        "remaining_balance": f"{loan.currency_symbol}{loan.remaining_balance:,.2f}",
+        "status": loan.get_status_display(),
+        "payments": [
+            {
+                "amount": f"{p.currency_symbol}{p.amount:,.2f}",
+                "payment_date": p.payment_date.strftime("%d %b %Y"),
+                "notes": p.notes if p.notes else "—",
+            }
+            for p in payments
+        ],
+    })
 
 
 @login_required

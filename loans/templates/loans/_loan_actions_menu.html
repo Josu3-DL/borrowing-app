@@ -1,0 +1,29 @@
+<details class="loan-actions-menu">
+    <summary class="loan-actions-trigger" aria-label="Acciones para el préstamo de {{ loan.borrower_name }}" aria-haspopup="true" aria-expanded="false">
+        <i data-lucide="more-vertical" aria-hidden="true"></i>
+    </summary>
+    <div class="loan-actions-panel" role="menu" aria-label="Acciones del préstamo de {{ loan.borrower_name }}">
+        <button type="button"
+                class="loan-actions-item ph-history-trigger"
+                role="menuitem"
+                data-history-url="{% url 'payments:loan_payments_json' loan.pk %}"
+                data-borrower="{{ loan.borrower_name }}">
+            <i data-lucide="clock" aria-hidden="true"></i> Ver historial
+        </button>
+        <a class="loan-actions-item" role="menuitem" href="{% url 'loans:update' loan.pk %}">
+            <i data-lucide="pencil" aria-hidden="true"></i> Editar préstamo
+        </a>
+        {% if loan.status == 'pending' %}
+            <a class="loan-actions-item" role="menuitem" href="{% url 'payments:create' %}?loan={{ loan.pk }}&amp;next={% url 'loans:list' %}">
+                <i data-lucide="banknote" aria-hidden="true"></i> Realizar abono
+            </a>
+        {% else %}
+            <span class="loan-actions-item is-disabled" role="menuitem" aria-disabled="true" title="Este préstamo ya está pagado">
+                <i data-lucide="banknote" aria-hidden="true"></i> Realizar abono
+            </span>
+        {% endif %}
+        <a class="loan-actions-item is-danger" role="menuitem" href="{% url 'loans:delete' loan.pk %}">
+            <i data-lucide="trash-2" aria-hidden="true"></i> Eliminar préstamo
+        </a>
+    </div>
+</details>

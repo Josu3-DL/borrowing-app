@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from payments.models import Payment
 
@@ -184,6 +185,70 @@ class LoanViewTests(LoanTestMixin, TestCase):
             response,
             ".dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }",
         )
+
+    def test_dashboard_filters_charts_by_supported_month_period(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:dashboard"),
+            {"chart_months": "3"},
+        )
+
+        self.assertEqual(response.context["chart_month_count"], 3)
+        self.assertEqual(len(response.context["month_series"]), 3)
+        self.assertContains(response, '<option value="3" selected>')
+        self.assertContains(
+            response,
+            'aria-label="Préstamos emitidos durante los últimos 3 meses"',
+        )
+        self.assertContains(
+            response,
+            'html[data-theme="dark"] .chart-period-filter select {',
+        )
+        self.assertContains(response, "data-chart-period-filter")
+        self.assertContains(
+            response,
+            'chartPeriodFilter.addEventListener("change"',
+        )
+        self.assertContains(response, "chartPeriodFilter.form.requestSubmit()")
+        self.assertNotContains(response, '<button type="submit">Aplicar</button>')
+
+    def test_dashboard_defaults_to_six_months_for_invalid_chart_period(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("loans:dashboard"),
+            {"chart_months": "24"},
+        )
+
+        self.assertEqual(response.context["chart_month_count"], 6)
+        self.assertEqual(len(response.context["month_series"]), 6)
+
+    def test_dashboard_charts_render_hover_and_focus_details(self):
+        loan = self.create_loan(
+            borrower_name="Chart borrower",
+            amount="100.00",
+            currency=Loan.Currency.USD,
+            loan_date=timezone.localdate().isoformat(),
+            due_date=(timezone.localdate() + timedelta(days=30)).isoformat(),
+        )
+        Payment.objects.create(
+            loan=loan,
+            amount=Decimal("25.00"),
+            currency=Payment.Currency.USD,
+            payment_date=timezone.localdate(),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("loans:dashboard"))
+
+        current_month = response.context["month_series"][-1]
+        self.assertEqual(current_month["loan_count"], 1)
+        self.assertEqual(current_month["recovered_amount"], "C$925.00")
+        self.assertContains(response, 'class="chart-tooltip" role="tooltip"')
+        self.assertContains(response, 'class="line-chart-point" tabindex="0"')
+        self.assertContains(response, "1 préstamo")
+        self.assertContains(response, "C$925.00 recuperados")
 
     def test_dashboard_only_accepts_get(self):
         self.client.force_login(self.user)
